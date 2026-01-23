@@ -91,8 +91,9 @@ func main() {
 	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Metrics server on separate port
@@ -100,8 +101,9 @@ func main() {
 	metricsMux.Handle("/metrics", promhttp.Handler())
 
 	metricsServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", metricsPort),
-		Handler: metricsMux,
+		Addr:              fmt.Sprintf(":%d", metricsPort),
+		Handler:           metricsMux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Start metrics server
