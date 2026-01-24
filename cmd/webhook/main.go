@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// test release
 func main() {
 	var (
 		port         int
