@@ -1,7 +1,7 @@
 apiVersion: v2
 name: fencemaster
 description: Kubernetes admission controller that automatically assigns namespaces to Rancher projects
-version: 0.1.0
+version: 0.1.1
 appVersion: "0.1.0"
 home: https://github.com/rvbsalgado/fencemaster
 icon: https://raw.githubusercontent.com/rvbsalgado/fencemaster/main/docs/images/fencemaster_logo_small.png
