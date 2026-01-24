@@ -1,0 +1,67 @@
+{
+  "branches": [
+    { "name": "release", "channel": "latest" },
+    { "name": "main", "channel": "rc", "prerelease": "rc" }
+  ],
+  "tagFormat": "${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" },
+          { "type": "perf", "release": "patch" },
+          { "breaking": true, "release": "major" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "Features" },
+            { "type": "fix", "section": "Bug Fixes" },
+            { "type": "perf", "section": "Performance Improvements" },
+            { "type": "refactor", "section": "Code Refactoring" },
+            { "type": "docs", "section": "Documentation" },
+            { "type": "style", "section": "Styles" },
+            { "type": "chore", "section": "Maintenance" },
+            { "type": "build", "section": "Build System" },
+            { "type": "ci", "section": "CI/CD" },
+            { "type": "test", "section": "Tests" }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "echo ${nextRelease.version} > .version && sed -i 's/^appVersion:.*/appVersion: \"'${nextRelease.version}'\"/' charts/fencemaster/Chart.yaml",
+        "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 -t ${process.env.DOCKER_IMAGE}:${nextRelease.version} -t ${process.env.DOCKER_IMAGE}:latest --push . && helm package charts/fencemaster && helm push fencemaster-*.tgz oci://${process.env.DOCKER_REGISTRY}/${process.env.GITHUB_REPOSITORY_OWNER}/charts"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "charts/fencemaster/Chart.yaml"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": []
+      }
+    ]
+  ]
+}
