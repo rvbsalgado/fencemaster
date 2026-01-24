@@ -1,0 +1,6 @@
+# Artifact Hub repository metadata
+# https://artifacthub.io/docs/topics/repositories/
+repositoryID: fencemaster
+owners:
+  - name: rvbsalgado
+    email: rvbsalgado@users.noreply.github.com

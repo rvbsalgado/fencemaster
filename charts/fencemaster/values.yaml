@@ -1,0 +1,142 @@
+# -- Number of replicas for high availability
+replicaCount: 2
+
+# -- Common labels to apply to all resources
+commonLabels: {}
+
+image:
+  # -- Container image repository
+  repository: ghcr.io/rvbsalgado/fencemaster
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag (defaults to chart appVersion)
+  tag: ""
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+# -- Override the name of the chart
+nameOverride: ""
+# -- Override the full name of the release
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create a service account
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- Name of the service account (auto-generated if empty)
+  name: ""
+
+# -- Annotations to add to pods
+podAnnotations: {}
+
+# -- Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 80
+
+# -- Resource requests and limits
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+webhook:
+  # -- Port the webhook server listens on
+  port: 8080
+  # -- Reject namespace if project not found (default: allow without annotation)
+  strictMode: false
+  # -- Log what would happen without actually patching namespaces
+  dryRun: false
+  # -- Cache TTL in minutes for cluster/project lookups
+  cacheTTLMinutes: 5
+
+metrics:
+  # -- Port for Prometheus metrics endpoint
+  port: 9090
+  serviceMonitor:
+    # -- Create a ServiceMonitor for Prometheus Operator
+    enabled: false
+    # -- Additional labels for ServiceMonitor
+    labels: {}
+    # -- Scrape interval
+    interval: 30s
+    # -- Scrape timeout
+    scrapeTimeout: 10s
+
+logging:
+  # -- Log level (debug, info, warn, error)
+  level: info
+  # -- Log format (json, text)
+  format: json
+
+podDisruptionBudget:
+  # -- Enable pod disruption budget
+  enabled: true
+  # -- Minimum available pods during disruption
+  minAvailable: 1
+
+topologySpreadConstraints:
+  # -- Enable topology spread constraints for HA
+  enabled: true
+  # -- Maximum allowed skew between zones/nodes
+  maxSkew: 1
+  # -- How to handle unsatisfiable constraints (ScheduleAnyway, DoNotSchedule)
+  whenUnsatisfiable: ScheduleAnyway
+
+gateway:
+  # -- Enable Gateway API HTTPRoute
+  enabled: false
+  # -- Gateway references for HTTPRoute
+  # @default -- `[]`
+  parentRefs: []
+  # -- Hostnames for the HTTPRoute
+  # @default -- `[]`
+  hostnames: []
+  # -- Additional HTTPRoute annotations
+  annotations: {}
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# Downstream cluster webhook configuration
+# Deploy separately on each downstream cluster
+downstreamWebhook:
+  # -- External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com)
+  externalUrl: ""
+  # -- Name of the downstream cluster (required when deploying webhook config)
+  clusterName: ""
+  # -- Webhook failure policy (Fail or Ignore)
+  failurePolicy: Fail
+  # -- Namespaces to exclude from mutation
+  excludeNamespaces:
+    - kube-system
+    - kube-public
+    - kube-node-lease

@@ -1,0 +1,46 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+## Installation
+
+### Management Cluster
+
+```bash
+helm install fencemaster ./charts/fencemaster \
+  -n fencemaster --create-namespace
+```
+
+### Downstream Clusters
+
+Deploy the webhook configuration to each downstream cluster:
+
+```bash
+helm template fencemaster ./charts/fencemaster \
+  --set downstreamWebhook.externalUrl=https://webhook.example.com \
+  --set downstreamWebhook.clusterName=my-cluster \
+  -s templates/mutatingwebhook.yaml | kubectl apply -f -
+```
+
+## Usage
+
+Add a `project` label to your namespace:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-app
+  labels:
+    project: platform
+```
+
+The webhook automatically adds the Rancher project annotation.
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}

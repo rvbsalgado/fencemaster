@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "fencemaster.fullname" . }}
+  labels:
+    {{- include "fencemaster.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["provisioning.cattle.io"]
+    resources: ["clusters"]
+    verbs: ["get", "list"]
+  - apiGroups: ["management.cattle.io"]
+    resources: ["projects"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "fencemaster.fullname" . }}
+  labels:
+    {{- include "fencemaster.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "fencemaster.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "fencemaster.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io

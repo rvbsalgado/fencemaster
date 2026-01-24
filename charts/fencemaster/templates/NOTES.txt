@@ -1,0 +1,34 @@
+{{- if not .Values.downstreamWebhook.externalUrl }}
+================================================================================
+  MANAGEMENT CLUSTER DEPLOYMENT
+================================================================================
+
+{{ include "fencemaster.fullname" . }} has been deployed to the management cluster.
+
+To configure downstream clusters, deploy the MutatingWebhookConfiguration on each:
+
+  helm template {{ .Release.Name }} {{ .Chart.Name }} \
+    --set downstreamWebhook.externalUrl=https://YOUR_WEBHOOK_URL \
+    --set downstreamWebhook.clusterName=YOUR_CLUSTER_NAME \
+    -s templates/mutatingwebhook.yaml | kubectl apply -f -
+
+{{- else }}
+================================================================================
+  DOWNSTREAM CLUSTER WEBHOOK CONFIGURATION
+================================================================================
+
+MutatingWebhookConfiguration has been deployed for cluster: {{ .Values.downstreamWebhook.clusterName }}
+
+Webhook URL: {{ .Values.downstreamWebhook.externalUrl }}/mutate/{{ .Values.downstreamWebhook.clusterName }}
+
+Namespaces with a 'project' label will automatically get the
+'field.cattle.io/projectId' annotation added.
+
+Example namespace:
+  apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: my-namespace
+    labels:
+      project: my-project-name
+{{- end }}

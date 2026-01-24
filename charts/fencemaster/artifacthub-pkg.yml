@@ -1,0 +1,13 @@
+# Artifact Hub package metadata
+# https://artifacthub.io/docs/topics/annotations/helm/
+screenshots:
+  - title: Architecture Overview
+    url: https://raw.githubusercontent.com/rvbsalgado/fencemaster/main/docs/images/fencemaster_logo.jpeg
+links:
+  - name: Documentation
+    url: https://github.com/rvbsalgado/fencemaster
+  - name: Source
+    url: https://github.com/rvbsalgado/fencemaster
+maintainers:
+  - name: rvbsalgado
+    email: rvbsalgado@users.noreply.github.com

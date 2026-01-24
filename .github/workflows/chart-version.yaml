@@ -1,0 +1,53 @@
+name: Bump Chart Version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'charts/**'
+      - '!charts/**/Chart.yaml'
+
+jobs:
+  bump-chart-version:
+    runs-on: ubuntu-latest
+    # Skip if commit message contains [skip ci] or is a release commit
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore(release)')"
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump chart version
+        run: |
+          CHART_FILE="charts/fencemaster/Chart.yaml"
+
+          # Get current version
+          CURRENT_VERSION=$(grep '^version:' "$CHART_FILE" | awk '{print $2}')
+          echo "Current chart version: $CURRENT_VERSION"
+
+          # Parse version components
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+
+          # Bump patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "New chart version: $NEW_VERSION"
+
+          # Update Chart.yaml
+          sed -i "s/^version: .*/version: $NEW_VERSION/" "$CHART_FILE"
+
+          # Commit and push
+          git add "$CHART_FILE"
+          git commit -m "chore(chart): bump chart version to $NEW_VERSION [skip ci]"
+          git push
