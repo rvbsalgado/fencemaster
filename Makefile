@@ -1,4 +1,4 @@
-.PHONY: build run test test-coverage test-race lint clean docker-build docker-push deploy helm-lint
+.PHONY: build run test test-coverage test-race lint clean docker-build docker-push deploy helm-lint helm-docs
 
 IMAGE_NAME ?= fencemaster
 IMAGE_TAG ?= latest
@@ -55,6 +55,11 @@ helm-lint:
 # Template Helm chart (for debugging)
 helm-template:
 	helm template test charts/fencemaster
+
+# Generate Helm chart documentation
+helm-docs:
+	@which helm-docs > /dev/null || (echo "Install helm-docs: brew install helm-docs" && exit 1)
+	helm-docs --chart-search-root=charts
 
 # CI targets
 ci: lint test-coverage
