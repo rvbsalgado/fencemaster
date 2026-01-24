@@ -1,3 +1,9 @@
+## [1.0.0-rc.2](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.1...1.0.0-rc.2) (2026-01-24)
+
+### Bug Fixes
+
+* enable Go cross-compiles ([7816fb1](https://github.com/rvbsalgado/fencemaster/commit/7816fb148d193b5159a9343247d4ab2506930c31))
+
 ## 1.0.0-rc.1 (2026-01-24)
 
 ### Features
