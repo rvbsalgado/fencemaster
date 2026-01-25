@@ -1,3 +1,13 @@
+## [1.0.0-rc.10](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.9...1.0.0-rc.10) (2026-01-25)
+
+### Bug Fixes
+
+* CHANGELOG.md ([434c9ef](https://github.com/rvbsalgado/fencemaster/commit/434c9ef408204439b0f56c94b16acda73a8898fe))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.7 [skip ci] ([8e4b1e4](https://github.com/rvbsalgado/fencemaster/commit/8e4b1e46f19ffef9fc804f95215337740eea0fc1))
+
 ## [1.0.0-rc.9](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.8...1.0.0-rc.9) (2026-01-25)
 
 ### Bug Fixes
