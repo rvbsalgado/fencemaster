@@ -20,6 +20,11 @@ maintainers:
     url: https://github.com/rvbsalgado
 annotations:
   artifacthub.io/license: Apache-2.0
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: Chart release pipeline
+    - kind: changed
+      description: Bump chart version to 0.1.6
   artifacthub.io/links: |
     - name: Documentation
       url: https://github.com/rvbsalgado/fencemaster
