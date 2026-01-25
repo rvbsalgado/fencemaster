@@ -2,7 +2,8 @@
 
 Kubernetes admission controller that automatically assigns namespaces to Rancher projects
 
-[![GitHub Release](https://img.shields.io/github/v/release/rvbsalgado/fencemaster?style=flat-square&label=Release)](https://github.com/rvbsalgado/fencemaster/releases)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square)  ![AppVersion: 1.0.0-rc.5](https://img.shields.io/badge/AppVersion-1.0.0--rc.5-informational?style=flat-square) 
+
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/fencemaster&style=flat-square)](https://artifacthub.io/packages/helm/fencemaster/fencemaster)
 ![License](https://img.shields.io/github/license/rvbsalgado/fencemaster?style=flat-square)
 
