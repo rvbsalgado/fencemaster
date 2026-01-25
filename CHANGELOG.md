@@ -1,3 +1,14 @@
+## [1.0.0-rc.8](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.7...1.0.0-rc.8) (2026-01-25)
+
+### Bug Fixes
+
+* artifacthub-repo.yaml location ([78df171](https://github.com/rvbsalgado/fencemaster/commit/78df171c8876838da6baa46332fcaa2f4ae501f0))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.5 [skip ci] ([509aff2](https://github.com/rvbsalgado/fencemaster/commit/509aff2a7522df8fc60dd913f3af18b38a0ba481))
+* update artifacthub repositoryID ([d5aa53b](https://github.com/rvbsalgado/fencemaster/commit/d5aa53b1608fc5e850af7f40a46eaa6520f1ad64))
+
 ## [1.0.0-rc.7](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.6...1.0.0-rc.7) (2026-01-25)
 
 ### Bug Fixes
