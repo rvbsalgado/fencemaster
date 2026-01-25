@@ -1,3 +1,9 @@
+## [1.0.0-rc.5](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.4...1.0.0-rc.5) (2026-01-25)
+
+### Bug Fixes
+
+* release pipeline ([f5f49ca](https://github.com/rvbsalgado/fencemaster/commit/f5f49cafe59770ee165eca6ca63616aa19238b78))
+
 ## [1.0.0-rc.4](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.3...1.0.0-rc.4) (2026-01-25)
 
 ### Bug Fixes
