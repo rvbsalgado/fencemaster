@@ -1,3 +1,9 @@
+## [1.0.0-rc.4](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.3...1.0.0-rc.4) (2026-01-25)
+
+### Bug Fixes
+
+* release pipeline & udpated chart readme ([de7172b](https://github.com/rvbsalgado/fencemaster/commit/de7172bc913d5c868bb574e6be44e613138a9896))
+
 ## [1.0.0-rc.3](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.2...1.0.0-rc.3) (2026-01-25)
 
 ### Bug Fixes
