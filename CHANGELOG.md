@@ -1,3 +1,9 @@
+## [1.0.0-rc.3](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.2...1.0.0-rc.3) (2026-01-25)
+
+### Bug Fixes
+
+* update logo ([7cf7017](https://github.com/rvbsalgado/fencemaster/commit/7cf701708f6babaaae47285e8dfd51c2a6c2ac38))
+
 ## [1.0.0-rc.2](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.1...1.0.0-rc.2) (2026-01-24)
 
 ### Bug Fixes
