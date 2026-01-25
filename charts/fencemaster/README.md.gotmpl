@@ -2,15 +2,34 @@
 
 {{ template "chart.description" . }}
 
-{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+[![GitHub Release](https://img.shields.io/github/v/release/rvbsalgado/fencemaster?style=flat-square&label=Release)](https://github.com/rvbsalgado/fencemaster/releases)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/fencemaster&style=flat-square)](https://artifacthub.io/packages/helm/fencemaster/fencemaster)
+![License](https://img.shields.io/github/license/rvbsalgado/fencemaster?style=flat-square)
 
 ## Installation
 
-### Management Cluster
+### Add the OCI Repository
 
 ```bash
-helm install fencemaster ./charts/fencemaster \
+# Helm 3.8+ supports OCI registries natively, no `helm repo add` needed
+```
+
+### Management Cluster
+
+Install fencemaster in your Rancher management cluster:
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   -n fencemaster --create-namespace
+```
+
+Or with custom values:
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set webhook.strictMode=true \
+  --set logging.level=debug
 ```
 
 ### Downstream Clusters
@@ -18,7 +37,7 @@ helm install fencemaster ./charts/fencemaster \
 Deploy the webhook configuration to each downstream cluster:
 
 ```bash
-helm template fencemaster ./charts/fencemaster \
+helm template fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   --set downstreamWebhook.externalUrl=https://webhook.example.com \
   --set downstreamWebhook.clusterName=my-cluster \
   -s templates/mutatingwebhook.yaml | kubectl apply -f -

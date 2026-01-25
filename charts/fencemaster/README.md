@@ -1,8 +1,10 @@
 # fencemaster
 
-Kubernetes admission controller that automatically assigns Rancher projects to namespaces
+Kubernetes admission controller that automatically assigns namespaces to Rancher projects
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.0](https://img.shields.io/badge/AppVersion-0.1.0-informational?style=flat-square)
+[![GitHub Release](https://img.shields.io/github/v/release/rvbsalgado/fencemaster?style=flat-square&label=Release)](https://github.com/rvbsalgado/fencemaster/releases)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/fencemaster&style=flat-square)](https://artifacthub.io/packages/helm/fencemaster/fencemaster)
+![License](https://img.shields.io/github/license/rvbsalgado/fencemaster?style=flat-square)
 
 ## Installation
 
@@ -109,4 +111,4 @@ The webhook automatically adds the Rancher project annotation.
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| rvbsalgado | rvbsalgado@users.noreply.github.com | https://github.com/rvbsalgado |
+| rvbsalgado | <rvbsalgado@users.noreply.github.com> | <https://github.com/rvbsalgado> |
