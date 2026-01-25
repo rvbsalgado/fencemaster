@@ -1,3 +1,13 @@
+## [1.0.0-rc.6](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.5...1.0.0-rc.6) (2026-01-25)
+
+### Bug Fixes
+
+* badges ([149467f](https://github.com/rvbsalgado/fencemaster/commit/149467f95fe9cfca4134b6a681302da08f4fc0e2))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.3 [skip ci] ([0e317ee](https://github.com/rvbsalgado/fencemaster/commit/0e317ee95ccf51b38d209779b7f1e2dd09beaa0b))
+
 ## [1.0.0-rc.5](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.4...1.0.0-rc.5) (2026-01-25)
 
 ### Bug Fixes
