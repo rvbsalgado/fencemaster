@@ -46,14 +46,14 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "echo ${nextRelease.version} > .version && case '${nextRelease.version}' in *-*) echo 'Skipping appVersion update for pre-release' ;; *) sed -i 's/^appVersion:.*/appVersion: \"'${nextRelease.version}'\"/' charts/fencemaster/Chart.yaml ;; esac",
+        "prepareCmd": "echo ${nextRelease.version} > .version && case '${nextRelease.version}' in *-*) echo 'Skipping appVersion update for pre-release' ;; *) sed -i 's/^appVersion:.*/appVersion: \"'${nextRelease.version}'\"/' charts/fencemaster/Chart.yaml ;; esac && helm-docs --chart-search-root=charts",
         "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 -t ${process.env.DOCKER_IMAGE}:${nextRelease.version} -t ${process.env.DOCKER_IMAGE}:latest --push . && helm package charts/fencemaster && helm push fencemaster-*.tgz oci://${process.env.DOCKER_REGISTRY}/${process.env.GITHUB_REPOSITORY_OWNER}/charts"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "charts/fencemaster/Chart.yaml"],
+        "assets": ["CHANGELOG.md", "charts/fencemaster/Chart.yaml", "charts/fencemaster/README.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
