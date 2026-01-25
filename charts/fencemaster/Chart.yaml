@@ -16,6 +16,8 @@ keywords:
   - kubernetes
 maintainers:
   - name: rvbsalgado
+    email: rvbsalgado@users.noreply.github.com
+    url: https://github.com/rvbsalgado
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/links: |

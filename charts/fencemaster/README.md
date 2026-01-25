@@ -1,17 +1,33 @@
 # fencemaster
 
-test release
 Kubernetes admission controller that automatically assigns Rancher projects to namespaces
 
 ![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.0](https://img.shields.io/badge/AppVersion-0.1.0-informational?style=flat-square)
 
 ## Installation
 
-### Management Cluster
+### Add the OCI Repository
 
 ```bash
-helm install fencemaster ./charts/fencemaster \
+# Helm 3.8+ supports OCI registries natively, no `helm repo add` needed
+```
+
+### Management Cluster
+
+Install fencemaster in your Rancher management cluster:
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   -n fencemaster --create-namespace
+```
+
+Or with custom values:
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set webhook.strictMode=true \
+  --set logging.level=debug
 ```
 
 ### Downstream Clusters
@@ -19,7 +35,7 @@ helm install fencemaster ./charts/fencemaster \
 Deploy the webhook configuration to each downstream cluster:
 
 ```bash
-helm template fencemaster ./charts/fencemaster \
+helm template fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   --set downstreamWebhook.externalUrl=https://webhook.example.com \
   --set downstreamWebhook.clusterName=my-cluster \
   -s templates/mutatingwebhook.yaml | kubectl apply -f -
@@ -93,4 +109,4 @@ The webhook automatically adds the Rancher project annotation.
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| rvbsalgado |  |  |
+| rvbsalgado | rvbsalgado@users.noreply.github.com | https://github.com/rvbsalgado |
