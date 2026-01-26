@@ -1,3 +1,18 @@
+## [1.0.0-rc.11](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.10...1.0.0-rc.11) (2026-01-26)
+
+### ⚠ BREAKING CHANGES
+
+* **chart:** downstreamWebhook now requires installMode=webhook or installMode=all to render the
+  MutatingWebhookConfiguration
+
+### Features
+
+* **chart:** add installMode, podLabels, and service labels/annotations ([675d434](https://github.com/rvbsalgado/fencemaster/commit/675d4348b4774cb8ec3888a43f42060e6a2155af))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.8 [skip ci] ([609066a](https://github.com/rvbsalgado/fencemaster/commit/609066a3f55f5479f658417f2581fb70abf9f3c1))
+
 ## [1.0.0-rc.10](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.9...1.0.0-rc.10) (2026-01-25)
 
 ### Bug Fixes
