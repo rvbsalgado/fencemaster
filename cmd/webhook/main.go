@@ -122,7 +122,7 @@ func main() {
 	go func() {
 		logger.Info("Webhook server started",
 			slog.Int("port", port),
-			slog.String("endpoint", "/mutate/{cluster-name}"),
+			slog.String("endpoint", "/mutate"),
 		)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Failed to start server", slog.String("error", err.Error()))

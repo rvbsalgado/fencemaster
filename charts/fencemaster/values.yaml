@@ -1,3 +1,6 @@
+# -- Installation mode: "server" (management cluster), "webhook" (downstream cluster), or "all" (both)
+installMode: server
+
 # -- Number of replicas for high availability
 replicaCount: 2
 
@@ -30,6 +33,9 @@ serviceAccount:
 # -- Annotations to add to pods
 podAnnotations: {}
 
+# -- Labels to add to pods
+podLabels: {}
+
 # -- Pod security context
 podSecurityContext:
   runAsNonRoot: true
@@ -52,6 +58,10 @@ service:
   type: ClusterIP
   # -- Service port
   port: 80
+  # -- Additional labels to add to the service
+  labels: {}
+  # -- Additional annotations to add to the service
+  annotations: {}
 
 # -- Resource requests and limits
 resources:
@@ -129,9 +139,9 @@ affinity: {}
 # Downstream cluster webhook configuration
 # Deploy separately on each downstream cluster
 downstreamWebhook:
-  # -- External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com)
+  # -- External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com). When installMode=all and this is empty, uses internal service reference.
   externalUrl: ""
-  # -- Name of the downstream cluster (required when deploying webhook config)
+  # -- Name of the downstream cluster (defaults to "local" when installMode=all)
   clusterName: ""
   # -- Webhook failure policy (Fail or Ignore)
   failurePolicy: Fail

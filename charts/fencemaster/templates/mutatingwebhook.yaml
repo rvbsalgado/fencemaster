@@ -2,10 +2,28 @@
 This template generates a MutatingWebhookConfiguration for downstream clusters.
 It should be installed on each downstream cluster that needs project assignment.
 
-Usage:
-  helm template . --set downstreamWebhook.externalUrl=https://webhook.example.com --set downstreamWebhook.clusterName=my-cluster
+Usage (webhook mode - external URL):
+  helm install fencemaster-webhook oci://ghcr.io/rvbsalgado/charts/fencemaster \
+    --set installMode=webhook \
+    --set downstreamWebhook.externalUrl=https://webhook.example.com \
+    --set downstreamWebhook.clusterName=my-cluster
+
+Usage (all mode - internal service reference):
+  helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+    --set installMode=all \
+    --set downstreamWebhook.clusterName=local
+
+Legacy usage (template only):
+  helm template fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+    --set downstreamWebhook.externalUrl=https://webhook.example.com \
+    --set downstreamWebhook.clusterName=my-cluster \
+    -s templates/mutatingwebhook.yaml | kubectl apply -f -
 */}}
-{{- if and .Values.downstreamWebhook.externalUrl .Values.downstreamWebhook.clusterName }}
+{{- $clusterName := .Values.downstreamWebhook.clusterName | default (eq .Values.installMode "all" | ternary "local" "") }}
+{{- $webhookEnabled := and $clusterName (or (eq .Values.installMode "webhook") (eq .Values.installMode "all")) }}
+{{- $useExternalUrl := and $webhookEnabled .Values.downstreamWebhook.externalUrl }}
+{{- $useServiceRef := and $webhookEnabled (eq .Values.installMode "all") (not .Values.downstreamWebhook.externalUrl) }}
+{{- if or $useExternalUrl $useServiceRef }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -20,7 +38,15 @@ webhooks:
     failurePolicy: {{ .Values.downstreamWebhook.failurePolicy }}
     matchPolicy: Equivalent
     clientConfig:
-      url: "{{ .Values.downstreamWebhook.externalUrl }}/mutate/{{ .Values.downstreamWebhook.clusterName }}"
+      {{- if $useExternalUrl }}
+      url: "{{ .Values.downstreamWebhook.externalUrl }}/mutate/{{ $clusterName }}"
+      {{- else }}
+      service:
+        name: {{ include "fencemaster.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: "/mutate/{{ $clusterName }}"
+        port: {{ .Values.service.port }}
+      {{- end }}
     rules:
       - operations: ["CREATE", "UPDATE"]
         apiGroups: [""]

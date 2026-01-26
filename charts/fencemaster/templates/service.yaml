@@ -1,9 +1,17 @@
+{{- if or (eq .Values.installMode "server") (eq .Values.installMode "all") }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "fencemaster.fullname" . }}
   labels:
     {{- include "fencemaster.labels" . | nindent 4 }}
+    {{- with .Values.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -17,3 +25,4 @@ spec:
       name: metrics
   selector:
     {{- include "fencemaster.selectorLabels" . | nindent 4 }}
+{{- end }}

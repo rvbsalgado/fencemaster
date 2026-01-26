@@ -65,9 +65,9 @@ The webhook automatically adds the Rancher project annotation.
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity rules for pod scheduling |
 | commonLabels | object | `{}` | Common labels to apply to all resources |
-| downstreamWebhook.clusterName | string | `""` | Name of the downstream cluster (required when deploying webhook config) |
+| downstreamWebhook.clusterName | string | `""` | Name of the downstream cluster (defaults to "local" when installMode=all) |
 | downstreamWebhook.excludeNamespaces | list | `["kube-system","kube-public","kube-node-lease"]` | Namespaces to exclude from mutation |
-| downstreamWebhook.externalUrl | string | `""` | External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com) |
+| downstreamWebhook.externalUrl | string | `""` | External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com). When installMode=all and this is empty, uses internal service reference. |
 | downstreamWebhook.failurePolicy | string | `"Fail"` | Webhook failure policy (Fail or Ignore) |
 | fullnameOverride | string | `""` | Override the full name of the release |
 | gateway.annotations | object | `{}` | Additional HTTPRoute annotations |
@@ -78,6 +78,7 @@ The webhook automatically adds the Rancher project annotation.
 | image.repository | string | `"ghcr.io/rvbsalgado/fencemaster"` | Container image repository |
 | image.tag | string | `""` | Image tag (defaults to chart appVersion) |
 | imagePullSecrets | list | `[]` | Image pull secrets for private registries |
+| installMode | string | `"server"` | Installation mode: "server" (management cluster), "webhook" (downstream cluster), or "all" (both) |
 | logging.format | string | `"json"` | Log format (json, text) |
 | logging.level | string | `"info"` | Log level (debug, info, warn, error) |
 | metrics.port | int | `9090` | Port for Prometheus metrics endpoint |
@@ -90,10 +91,13 @@ The webhook automatically adds the Rancher project annotation.
 | podAnnotations | object | `{}` | Annotations to add to pods |
 | podDisruptionBudget.enabled | bool | `true` | Enable pod disruption budget |
 | podDisruptionBudget.minAvailable | int | `1` | Minimum available pods during disruption |
+| podLabels | object | `{}` | Labels to add to pods |
 | podSecurityContext | object | `{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}}` | Pod security context |
 | replicaCount | int | `2` | Number of replicas for high availability |
 | resources | object | `{"limits":{"cpu":"200m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Resource requests and limits |
 | securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Container security context |
+| service.annotations | object | `{}` | Additional annotations to add to the service |
+| service.labels | object | `{}` | Additional labels to add to the service |
 | service.port | int | `80` | Service port |
 | service.type | string | `"ClusterIP"` | Service type |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
