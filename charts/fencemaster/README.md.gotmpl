@@ -2,7 +2,7 @@
 
 {{ template "chart.description" . }}
 
-{{ template "chart.versionBadge" . }} {{ template "chart.appVersionBadge" . }} {{ template "chart.typeBadge" . }}
+{{ template "chart.versionBadge" . }} {{ template "chart.appVersionBadge" . }}
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/fencemaster&style=flat-square)](https://artifacthub.io/packages/helm/fencemaster/fencemaster)
 ![License](https://img.shields.io/github/license/rvbsalgado/fencemaster?style=flat-square)
@@ -33,18 +33,33 @@ helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   --set logging.level=debug
 ```
 
-### Downstream Clusters
+### Downstream Clusters (Webhook Only)
 
-Deploy the webhook configuration to each downstream cluster:
+Deploy the webhook configuration to each downstream cluster using **helm install**:
 
 ```bash
-helm template fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
-  --set downstreamWebhook.externalUrl=https://webhook.example.com \
-  --set downstreamWebhook.clusterName=my-cluster \
-  -s templates/mutatingwebhook.yaml | kubectl apply -f -
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set installMode=webhook \
+  --set downstreamWebhook.externalUrl=https://fencemaster.management.example.com \
+  --set downstreamWebhook.clusterName=my-cluster
 ```
 
+### Combined Installation (Management + Webhook)
+
+Install fencemaster in "all" mode to run both server and webhook in a single cluster:
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set installMode=all
+```
+
+When using `installMode=all` with a downstream cluster, the webhook automatically uses the internal service  and `local` as cluster name (no `externalUrl` or `clusterName` needed):
+
 ## Usage
+
+### Basic Project Assignment
 
 Add a `project` label to your namespace:
 
@@ -57,7 +72,57 @@ metadata:
     project: platform
 ```
 
-The webhook automatically adds the Rancher project annotation.
+The webhook automatically adds the Rancher project annotation:
+
+```yaml
+metadata:
+  annotations:
+    field.cattle.io/projectId: c-xxxxx:p-xxxxx
+```
+
+### Advanced Configuration Examples
+
+#### 1. Enable Strict Mode (Reject unlabeled namespaces)
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set webhook.strictMode=true
+```
+
+This will prevent creation of namespaces without a valid project label.
+
+#### 2. Dry-Run Mode (Preview mutations without applying)
+
+```bash
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n fencemaster --create-namespace \
+  --set webhook.dryRun=true \
+  --set logging.level=debug
+```
+
+Useful for testing namespace mutation logic.
+
+View logs:
+
+```bash
+kubectl logs -n fencemaster deployment/fencemaster -f
+```
+
+### Capabilities Summary
+
+| Feature                   | Use Case                                                     |
+|---------------------------|--------------------------------------------------------------|
+| **Strict Mode**           | Enforce project assignment on all namespaces                 |
+| **Dry-Run Mode**          | Test mutations before production deployment                  |
+| **Caching**               | Reduce API calls to Rancher (configurable TTL)               |
+| **Multi-Cluster**         | Support for management + multiple downstream clusters        |
+| **High Availability**     | 3+ replicas with topology spread constraints                 |
+| **Observability**         | Prometheus metrics and structured logging                    |
+| **Security**              | Non-root user, read-only filesystem, no privilege escalation |
+| **Gateway API**           | Modern ingress alternative to traditional Ingress            |
+| **Pod Disruption Budget** | Maintain availability during cluster maintenance             |
+| **Failure Policy**        | Choose to fail/ignore if webhook is unreachable              |
 
 {{ template "chart.requirementsSection" . }}
 
