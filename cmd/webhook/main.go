@@ -68,6 +68,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	config.QPS = 50
+	config.Burst = 100
+
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		logger.Error("Failed to create dynamic client", slog.String("error", err.Error()))
