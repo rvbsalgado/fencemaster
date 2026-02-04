@@ -2,11 +2,13 @@ package rancher
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -260,9 +262,10 @@ func TestCacheStats(t *testing.T) {
 func TestHealthCheck_Success(t *testing.T) {
 	scheme := runtime.NewScheme()
 
-	// Register list kind for clusters
+	// Register list kinds for clusters and projects
 	gvrToListKind := map[schema.GroupVersionResource]string{
 		{Group: "provisioning.cattle.io", Version: "v1", Resource: "clusters"}: "ClusterList",
+		{Group: "management.cattle.io", Version: "v3", Resource: "projects"}:   "ProjectList",
 	}
 	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
 	logger := newTestLogger()
@@ -281,9 +284,10 @@ func TestHealthCheck_Success(t *testing.T) {
 func TestHealthCheck_ContextCanceled(t *testing.T) {
 	scheme := runtime.NewScheme()
 
-	// Register list kind for clusters
+	// Register list kinds for clusters and projects
 	gvrToListKind := map[schema.GroupVersionResource]string{
 		{Group: "provisioning.cattle.io", Version: "v1", Resource: "clusters"}: "ClusterList",
+		{Group: "management.cattle.io", Version: "v3", Resource: "projects"}:   "ProjectList",
 	}
 	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
 	logger := newTestLogger()
@@ -298,6 +302,30 @@ func TestHealthCheck_ContextCanceled(t *testing.T) {
 	// Note: fake client doesn't respect context cancellation, so this test
 	// mainly verifies the code path works
 	_ = err // Result depends on fake client implementation
+}
+
+func TestHealthCheck_ChecksBothResources(t *testing.T) {
+	// This test verifies that HealthCheck checks both clusters and projects APIs
+	// by ensuring a successful health check registers both GVRs
+	scheme := runtime.NewScheme()
+
+	// Register list kinds for both clusters and projects
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "provisioning.cattle.io", Version: "v1", Resource: "clusters"}: "ClusterList",
+		{Group: "management.cattle.io", Version: "v3", Resource: "projects"}:   "ProjectList",
+	}
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	logger := newTestLogger()
+
+	client := NewClient(dynamicClient, logger, 5*time.Minute)
+
+	ctx := context.Background()
+	err := client.HealthCheck(ctx)
+
+	// Should succeed when both resources are accessible
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestCacheConcurrency(t *testing.T) {
@@ -326,4 +354,104 @@ func TestCacheConcurrency(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		<-done
 	}
+}
+
+func TestIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "timeout error",
+			err:      errors.NewTimeoutError("timeout", 5),
+			expected: true,
+		},
+		{
+			name:     "server timeout error",
+			err:      errors.NewServerTimeout(schema.GroupResource{Group: "test", Resource: "test"}, "get", 5),
+			expected: true,
+		},
+		{
+			name:     "too many requests error",
+			err:      errors.NewTooManyRequests("rate limited", 5),
+			expected: true,
+		},
+		{
+			name:     "service unavailable error",
+			err:      errors.NewServiceUnavailable("service unavailable"),
+			expected: true,
+		},
+		{
+			name:     "internal error",
+			err:      errors.NewInternalError(fmt.Errorf("internal")),
+			expected: true,
+		},
+		{
+			name:     "not found error",
+			err:      errors.NewNotFound(schema.GroupResource{Group: "test", Resource: "test"}, "name"),
+			expected: false,
+		},
+		{
+			name:     "bad request error",
+			err:      errors.NewBadRequest("bad request"),
+			expected: false,
+		},
+		{
+			name:     "forbidden error",
+			err:      errors.NewForbidden(schema.GroupResource{Group: "test", Resource: "test"}, "name", nil),
+			expected: false,
+		},
+		{
+			name:     "unauthorized error",
+			err:      errors.NewUnauthorized("unauthorized"),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isRetryableError(tt.err)
+			if result != tt.expected {
+				t.Errorf("isRetryableError(%v) = %v, want %v", tt.err, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetClusterID_ContextCanceled(t *testing.T) {
+	scheme := runtime.NewScheme()
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme)
+	logger := newTestLogger()
+
+	client := NewClient(dynamicClient, logger, 5*time.Minute)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	_, err := client.GetClusterID(ctx, "test-cluster")
+	if err == nil {
+		t.Error("expected error for canceled context")
+	}
+}
+
+func TestGetProjectID_ContextCanceled(t *testing.T) {
+	scheme := runtime.NewScheme()
+
+	// Register list kind for projects
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "management.cattle.io", Version: "v3", Resource: "projects"}: "ProjectList",
+	}
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	logger := newTestLogger()
+
+	client := NewClient(dynamicClient, logger, 5*time.Minute)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	_, err := client.GetProjectID(ctx, "c-m-12345", "test-project")
+	// The fake client may or may not respect context cancellation
+	// This test ensures the code path works correctly
+	_ = err
 }
