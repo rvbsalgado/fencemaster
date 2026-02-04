@@ -1,3 +1,9 @@
+## [1.0.0-rc.13](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.12...1.0.0-rc.13) (2026-02-04)
+
+### Features
+
+* optimize build and add security hardening ([60d2098](https://github.com/rvbsalgado/fencemaster/commit/60d20987075c1228a4e38c5795add6fb60dc066c))
+
 ## [1.0.0-rc.12](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.11...1.0.0-rc.12) (2026-01-27)
 
 ### Bug Fixes
