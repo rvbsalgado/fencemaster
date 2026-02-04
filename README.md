@@ -13,10 +13,28 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/rvbsalgado/fencemaster/stargazers"><img src="https://img.shields.io/github/stars/rvbsalgado/fencemaster?style=flat-square" alt="Stars"></a>
+  <a href="https://github.com/rvbsalgado/fencemaster/network/members"><img src="https://img.shields.io/github/forks/rvbsalgado/fencemaster?style=flat-square" alt="Forks"></a>
+  <a href="https://github.com/rvbsalgado/fencemaster/issues"><img src="https://img.shields.io/github/issues/rvbsalgado/fencemaster?style=flat-square" alt="Issues"></a>
+  <a href="https://github.com/rvbsalgado/fencemaster/pulls"><img src="https://img.shields.io/github/issues-pr/rvbsalgado/fencemaster?style=flat-square" alt="Pull Requests"></a>
+</p>
+
+<p align="center">
   <strong>Kubernetes admission controller that automatically assigns namespaces to Rancher projects</strong>
 </p>
 
 ---
+
+## Why Fencemaster?
+
+Managing Rancher project assignments across multiple clusters is tedious:
+
+- **Manual assignment** - Clicking through Rancher UI for each namespace
+- **Drift** - GitOps tools recreate namespaces without project assignments
+- **Inconsistency** - Different clusters have different project configurations
+- **No automation** - Rancher doesn't natively support declarative project assignment
+
+**Fencemaster solves this** by letting you declare project membership as a simple label. Your GitOps pipeline (Flux, ArgoCD, etc.) creates namespaces with a `project: platform` label, and Fencemaster automatically assigns them to the correct Rancher project.
 
 ## Overview
 

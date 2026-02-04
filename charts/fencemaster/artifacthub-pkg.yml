@@ -1,5 +1,16 @@
 # Artifact Hub package metadata
 # https://artifacthub.io/docs/topics/annotations/helm/
+keywords:
+  - kubernetes
+  - rancher
+  - admission-controller
+  - mutating-webhook
+  - namespace
+  - project
+  - gitops
+  - automation
+  - multi-cluster
+  - fleet
 screenshots:
   - title: Architecture Overview
     url: https://raw.githubusercontent.com/rvbsalgado/fencemaster/main/docs/images/fencemaster_logo.jpeg
