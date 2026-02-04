@@ -56,6 +56,10 @@ spec:
               value: {{ .Values.webhook.dryRun | quote }}
             - name: CACHE_TTL_MINUTES
               value: {{ .Values.webhook.cacheTTLMinutes | quote }}
+            - name: PROJECT_LABEL
+              value: {{ .Values.webhook.projectLabel | quote }}
+            - name: PROJECT_ANNOTATION
+              value: {{ .Values.webhook.projectAnnotation | quote }}
             - name: METRICS_PORT
               value: {{ .Values.metrics.port | quote }}
           readinessProbe:

@@ -20,9 +20,7 @@ import (
 
 func TestHandleMutate_MissingClusterName(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &Handler{
-		logger: logger,
-	}
+	handler := NewHandler(nil, logger, testHandlerConfig())
 
 	req := httptest.NewRequest(http.MethodPost, "/mutate/", nil)
 	w := httptest.NewRecorder()
@@ -36,9 +34,7 @@ func TestHandleMutate_MissingClusterName(t *testing.T) {
 
 func TestHandleMutate_InvalidBody(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &Handler{
-		logger: logger,
-	}
+	handler := NewHandler(nil, logger, testHandlerConfig())
 
 	req := httptest.NewRequest(http.MethodPost, "/mutate/test-cluster", bytes.NewReader([]byte("invalid json")))
 	w := httptest.NewRecorder()
@@ -52,9 +48,7 @@ func TestHandleMutate_InvalidBody(t *testing.T) {
 
 func TestMutate_NonNamespaceResource(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &Handler{
-		logger: logger,
-	}
+	handler := NewHandler(nil, logger, testHandlerConfig())
 
 	req := &admissionv1.AdmissionRequest{
 		Kind: metav1.GroupVersionKind{
@@ -74,9 +68,7 @@ func TestMutate_NonNamespaceResource(t *testing.T) {
 
 func TestMutate_NamespaceWithoutProjectLabel(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &Handler{
-		logger: logger,
-	}
+	handler := NewHandler(nil, logger, testHandlerConfig())
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,9 +100,7 @@ func TestMutate_NamespaceWithoutProjectLabel(t *testing.T) {
 
 func TestMutate_InvalidNamespaceJSON(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := &Handler{
-		logger: logger,
-	}
+	handler := NewHandler(nil, logger, testHandlerConfig())
 
 	req := &admissionv1.AdmissionRequest{
 		Kind: metav1.GroupVersionKind{
@@ -172,9 +162,7 @@ func TestHandleMutate_ExtractClusterName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			handler := &Handler{
-				logger: logger,
-			}
+			handler := NewHandler(nil, logger, testHandlerConfig())
 
 			// Create a valid admission review for non-error cases
 			ns := &corev1.Namespace{
@@ -278,6 +266,16 @@ func (m *mockRancherClient) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
+// testHandlerConfig returns default config for tests
+func testHandlerConfig() HandlerConfig {
+	return HandlerConfig{
+		StrictMode:        false,
+		DryRun:            false,
+		ProjectLabel:      "project",
+		ProjectAnnotation: "field.cattle.io/projectId",
+	}
+}
+
 func TestMutate_SuccessfulMutation(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	mockClient := &mockRancherClient{
@@ -285,12 +283,7 @@ func TestMutate_SuccessfulMutation(t *testing.T) {
 		projectID: "p-xyz789",
 	}
 
-	handler := &Handler{
-		rancherClient: mockClient,
-		logger:        logger,
-		strictMode:    false,
-		dryRun:        false,
-	}
+	handler := NewHandler(mockClient, logger, testHandlerConfig())
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -340,12 +333,9 @@ func TestMutate_DryRunMode(t *testing.T) {
 		projectID: "p-xyz789",
 	}
 
-	handler := &Handler{
-		rancherClient: mockClient,
-		logger:        logger,
-		strictMode:    false,
-		dryRun:        true,
-	}
+	cfg := testHandlerConfig()
+	cfg.DryRun = true
+	handler := NewHandler(mockClient, logger, cfg)
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -376,12 +366,9 @@ func TestMutate_StrictModeClusterNotFound(t *testing.T) {
 		clusterErr: fmt.Errorf("cluster not found"),
 	}
 
-	handler := &Handler{
-		rancherClient: mockClient,
-		logger:        logger,
-		strictMode:    true,
-		dryRun:        false,
-	}
+	cfg := testHandlerConfig()
+	cfg.StrictMode = true
+	handler := NewHandler(mockClient, logger, cfg)
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -409,12 +396,7 @@ func TestMutate_PermissiveModeClusterNotFound(t *testing.T) {
 		clusterErr: fmt.Errorf("cluster not found"),
 	}
 
-	handler := &Handler{
-		rancherClient: mockClient,
-		logger:        logger,
-		strictMode:    false,
-		dryRun:        false,
-	}
+	handler := NewHandler(mockClient, logger, testHandlerConfig())
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -443,12 +425,7 @@ func TestMutate_UpdateWithUnchangedLabel(t *testing.T) {
 		projectID: "p-xyz789",
 	}
 
-	handler := &Handler{
-		rancherClient: mockClient,
-		logger:        logger,
-		strictMode:    false,
-		dryRun:        false,
-	}
+	handler := NewHandler(mockClient, logger, testHandlerConfig())
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

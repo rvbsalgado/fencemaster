@@ -81,6 +81,10 @@ webhook:
   dryRun: false
   # -- Cache TTL in minutes for cluster/project lookups
   cacheTTLMinutes: 5
+  # -- Namespace label to read project name from
+  projectLabel: project
+  # -- Annotation key to set on namespace for Rancher project assignment
+  projectAnnotation: field.cattle.io/projectId
 
 metrics:
   # -- Port for Prometheus metrics endpoint

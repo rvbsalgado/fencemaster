@@ -17,8 +17,6 @@ import (
 )
 
 const (
-	projectLabel      = "project"
-	projectAnnotation = "field.cattle.io/projectId"
 	// maxRequestBodySize limits the request body to 1MB to prevent DoS attacks
 	maxRequestBodySize = 1 << 20 // 1MB
 )
@@ -30,19 +28,31 @@ type RancherClient interface {
 	HealthCheck(ctx context.Context) error
 }
 
-type Handler struct {
-	rancherClient RancherClient
-	logger        *slog.Logger
-	strictMode    bool
-	dryRun        bool
+// HandlerConfig contains configuration options for the webhook handler
+type HandlerConfig struct {
+	StrictMode        bool
+	DryRun            bool
+	ProjectLabel      string
+	ProjectAnnotation string
 }
 
-func NewHandler(rancherClient RancherClient, logger *slog.Logger, strictMode, dryRun bool) *Handler {
+type Handler struct {
+	rancherClient     RancherClient
+	logger            *slog.Logger
+	strictMode        bool
+	dryRun            bool
+	projectLabel      string
+	projectAnnotation string
+}
+
+func NewHandler(rancherClient RancherClient, logger *slog.Logger, cfg HandlerConfig) *Handler {
 	return &Handler{
-		rancherClient: rancherClient,
-		logger:        logger,
-		strictMode:    strictMode,
-		dryRun:        dryRun,
+		rancherClient:     rancherClient,
+		logger:            logger,
+		strictMode:        cfg.StrictMode,
+		dryRun:            cfg.DryRun,
+		projectLabel:      cfg.ProjectLabel,
+		projectAnnotation: cfg.ProjectAnnotation,
 	}
 }
 
@@ -118,7 +128,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 	}
 
 	// Get the project label from the new namespace
-	projectName, hasProjectLabel := namespace.Labels[projectLabel]
+	projectName, hasProjectLabel := namespace.Labels[h.projectLabel]
 	if !hasProjectLabel {
 		logger.Debug("Namespace has no project label, skipping",
 			slog.String("namespace", namespace.Name),
@@ -131,13 +141,13 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 	// For UPDATE operations, check if we need to do anything
 	if req.Operation == admissionv1.Update {
 		// Check current annotation value
-		currentAnnotation := namespace.Annotations[projectAnnotation]
+		currentAnnotation := namespace.Annotations[h.projectAnnotation]
 
 		// Parse old object to see if project label changed
 		var oldNamespace corev1.Namespace
 		if req.OldObject.Raw != nil {
 			if err := json.Unmarshal(req.OldObject.Raw, &oldNamespace); err == nil {
-				oldProjectName := oldNamespace.Labels[projectLabel]
+				oldProjectName := oldNamespace.Labels[h.projectLabel]
 
 				// If project label hasn't changed and annotation exists, skip
 				if oldProjectName == projectName && currentAnnotation != "" {
@@ -203,7 +213,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 	projectAnnotationValue := fmt.Sprintf("%s:%s", clusterID, projectID)
 
 	// Check if annotation already has the correct value (avoid unnecessary patches)
-	if namespace.Annotations != nil && namespace.Annotations[projectAnnotation] == projectAnnotationValue {
+	if namespace.Annotations != nil && namespace.Annotations[h.projectAnnotation] == projectAnnotationValue {
 		logger.Debug("Annotation already has correct value, skipping",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
@@ -234,7 +244,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 		},
 		{
 			"op":    "add",
-			"path":  fmt.Sprintf("/metadata/annotations/%s", escapeJSONPointer(projectAnnotation)),
+			"path":  fmt.Sprintf("/metadata/annotations/%s", escapeJSONPointer(h.projectAnnotation)),
 			"value": projectAnnotationValue,
 		},
 	}
@@ -244,7 +254,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 		patch = []map[string]any{
 			{
 				"op":    "add",
-				"path":  fmt.Sprintf("/metadata/annotations/%s", escapeJSONPointer(projectAnnotation)),
+				"path":  fmt.Sprintf("/metadata/annotations/%s", escapeJSONPointer(h.projectAnnotation)),
 				"value": projectAnnotationValue,
 			},
 		}

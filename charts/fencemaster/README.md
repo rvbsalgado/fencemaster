@@ -175,6 +175,8 @@ kubectl logs -n fencemaster deployment/fencemaster -f
 | webhook.cacheTTLMinutes | int | `5` | Cache TTL in minutes for cluster/project lookups |
 | webhook.dryRun | bool | `false` | Log what would happen without actually patching namespaces |
 | webhook.port | int | `8080` | Port the webhook server listens on |
+| webhook.projectAnnotation | string | `"field.cattle.io/projectId"` | Annotation key to set on namespace for Rancher project assignment |
+| webhook.projectLabel | string | `"project"` | Namespace label to read project name from |
 | webhook.strictMode | bool | `false` | Reject namespace if project not found (default: allow without annotation) |
 
 ## Maintainers

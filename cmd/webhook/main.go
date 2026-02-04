@@ -25,13 +25,15 @@ var version = "dev"
 
 func main() {
 	var (
-		port         int
-		metricsPort  int
-		logLevel     string
-		logFormat    string
-		strictMode   bool
-		dryRun       bool
-		cacheTTLMins int
+		port              int
+		metricsPort       int
+		logLevel          string
+		logFormat         string
+		strictMode        bool
+		dryRun            bool
+		cacheTTLMins      int
+		projectLabel      string
+		projectAnnotation string
 	)
 
 	flag.IntVar(&port, "port", getEnvInt("PORT", 8080), "Webhook server port")
@@ -41,6 +43,8 @@ func main() {
 	flag.BoolVar(&strictMode, "strict-mode", getEnvBool("STRICT_MODE", false), "Reject namespace if project not found (default: allow without annotation)")
 	flag.BoolVar(&dryRun, "dry-run", getEnvBool("DRY_RUN", false), "Log what would happen without actually patching namespaces")
 	flag.IntVar(&cacheTTLMins, "cache-ttl", getEnvInt("CACHE_TTL_MINUTES", 5), "Cache TTL in minutes for cluster/project lookups")
+	flag.StringVar(&projectLabel, "project-label", getEnv("PROJECT_LABEL", "project"), "Namespace label to read project name from")
+	flag.StringVar(&projectAnnotation, "project-annotation", getEnv("PROJECT_ANNOTATION", "field.cattle.io/projectId"), "Annotation key to set on namespace")
 	flag.Parse()
 
 	cacheTTL := time.Duration(cacheTTLMins) * time.Minute
@@ -54,6 +58,8 @@ func main() {
 		slog.Bool("dry_run", dryRun),
 		slog.Duration("cache_ttl", cacheTTL),
 		slog.Int("metrics_port", metricsPort),
+		slog.String("project_label", projectLabel),
+		slog.String("project_annotation", projectAnnotation),
 	)
 
 	config, err := rest.InClusterConfig()
@@ -69,7 +75,12 @@ func main() {
 	}
 
 	rancherClient := rancher.NewClient(dynamicClient, logger, cacheTTL)
-	handler := webhook.NewHandler(rancherClient, logger, strictMode, dryRun)
+	handler := webhook.NewHandler(rancherClient, logger, webhook.HandlerConfig{
+		StrictMode:        strictMode,
+		DryRun:            dryRun,
+		ProjectLabel:      projectLabel,
+		ProjectAnnotation: projectAnnotation,
+	})
 
 	// Main webhook server
 	mux := http.NewServeMux()
