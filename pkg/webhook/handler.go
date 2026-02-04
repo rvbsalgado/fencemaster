@@ -19,6 +19,8 @@ import (
 const (
 	projectLabel      = "project"
 	projectAnnotation = "field.cattle.io/projectId"
+	// maxRequestBodySize limits the request body to 1MB to prevent DoS attacks
+	maxRequestBodySize = 1 << 20 // 1MB
 )
 
 // RancherClient defines the interface for Rancher API operations
@@ -59,7 +61,7 @@ func (h *Handler) HandleMutate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
 	if err != nil {
 		h.logger.Error("Failed to read request body", slog.String("error", err.Error()))
 		metrics.RequestsTotal.WithLabelValues("unknown", metrics.StatusError).Inc()

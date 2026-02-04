@@ -5,7 +5,7 @@ IMAGE_TAG ?= latest
 COVERAGE_DIR ?= coverage
 
 build:
-	go build -o bin/fencemaster ./cmd/webhook
+	go build -ldflags="-s -w" -trimpath -o bin/fencemaster ./cmd/webhook
 
 run:
 	go run ./cmd/webhook

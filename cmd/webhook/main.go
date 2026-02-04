@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,7 +20,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// test release
+// version is set via ldflags at build time
+var version = "dev"
+
 func main() {
 	var (
 		port         int
@@ -44,6 +47,7 @@ func main() {
 	logger := logging.Setup(logLevel, logFormat)
 
 	logger.Info("Starting fencemaster",
+		slog.String("version", version),
 		slog.String("log_level", logLevel),
 		slog.String("log_format", logFormat),
 		slog.Bool("strict_mode", strictMode),
@@ -165,8 +169,7 @@ func getEnvBool(key string, defaultValue bool) bool {
 
 func getEnvInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
-		var intVal int
-		if _, err := fmt.Sscanf(value, "%d", &intVal); err == nil {
+		if intVal, err := strconv.Atoi(value); err == nil {
 			return intVal
 		}
 	}
