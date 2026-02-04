@@ -1,3 +1,17 @@
+## [1.0.0-rc.14](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.13...1.0.0-rc.14) (2026-02-04)
+
+### Features
+
+* add configurable project label and annotation ([3fa25e0](https://github.com/rvbsalgado/fencemaster/commit/3fa25e062d95580fbbb293ee1af20a7db4d4f06d))
+
+### Code Refactoring
+
+* **webhook:** add request ID for log correlation and optimize escapeJSONPointer ([52b9eef](https://github.com/rvbsalgado/fencemaster/commit/52b9eef35839769ab8eaaf1f076d69663b17fd47))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.10 [skip ci] ([28348b7](https://github.com/rvbsalgado/fencemaster/commit/28348b7491c3726e5a9a37a74770dacf5e40207b))
+
 ## [1.0.0-rc.13](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.12...1.0.0-rc.13) (2026-02-04)
 
 ### Features
