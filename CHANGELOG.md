@@ -1,3 +1,9 @@
+## [1.0.0-rc.16](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.15...1.0.0-rc.16) (2026-02-04)
+
+### Features
+
+* improve retries ([3b0ff6d](https://github.com/rvbsalgado/fencemaster/commit/3b0ff6dfaaa79d954651ac222a73969954ac51f1))
+
 ## [1.0.0-rc.15](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.14...1.0.0-rc.15) (2026-02-04)
 
 ### Bug Fixes
