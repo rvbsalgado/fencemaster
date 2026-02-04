@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>Kubernetes admission controller that automatically assigns namespaces to Rancher projects</strong>
+  <strong>A namespace admission controller for Rancher project automation</strong>
 </p>
 
 ---
@@ -38,7 +38,7 @@ Managing Rancher project assignments across multiple clusters is tedious:
 
 ## Overview
 
-Fencemaster is a mutating admission webhook that runs in your Rancher management cluster. It automatically adds Rancher project annotations to namespaces based on a simple label.
+Fencemaster is a namespace admission controller that enables Rancher project automation. This mutating admission webhook runs in your Rancher management cluster and automatically adds project annotations to namespaces based on a simple label.
 
 ```yaml
 # Add this label to your namespace
