@@ -62,7 +62,7 @@ func TestMutate_NonNamespaceResource(t *testing.T) {
 		},
 	}
 
-	response, status := handler.mutate(context.Background(), req, "test-cluster")
+	response, status := handler.mutate(context.Background(), req, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed for non-namespace resource")
@@ -96,7 +96,7 @@ func TestMutate_NamespaceWithoutProjectLabel(t *testing.T) {
 		Operation: admissionv1.Create,
 	}
 
-	response, status := handler.mutate(context.Background(), req, "test-cluster")
+	response, status := handler.mutate(context.Background(), req, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed for namespace without project label")
@@ -122,7 +122,7 @@ func TestMutate_InvalidNamespaceJSON(t *testing.T) {
 		Operation: admissionv1.Create,
 	}
 
-	response, status := handler.mutate(context.Background(), req, "test-cluster")
+	response, status := handler.mutate(context.Background(), req, "test-cluster", logger)
 
 	if response.Allowed {
 		t.Error("expected request to be denied for invalid namespace JSON")
@@ -302,7 +302,7 @@ func TestMutate_SuccessfulMutation(t *testing.T) {
 	}
 
 	review := createAdmissionReview(ns, admissionv1.Create)
-	response, status := handler.mutate(context.Background(), review.Request, "test-cluster")
+	response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed")
@@ -357,7 +357,7 @@ func TestMutate_DryRunMode(t *testing.T) {
 	}
 
 	review := createAdmissionReview(ns, admissionv1.Create)
-	response, status := handler.mutate(context.Background(), review.Request, "test-cluster")
+	response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed in dry-run mode")
@@ -393,7 +393,7 @@ func TestMutate_StrictModeClusterNotFound(t *testing.T) {
 	}
 
 	review := createAdmissionReview(ns, admissionv1.Create)
-	response, status := handler.mutate(context.Background(), review.Request, "test-cluster")
+	response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
 
 	if response.Allowed {
 		t.Error("expected request to be denied in strict mode when cluster not found")
@@ -426,7 +426,7 @@ func TestMutate_PermissiveModeClusterNotFound(t *testing.T) {
 	}
 
 	review := createAdmissionReview(ns, admissionv1.Create)
-	response, status := handler.mutate(context.Background(), review.Request, "test-cluster")
+	response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed in permissive mode")
@@ -475,7 +475,7 @@ func TestMutate_UpdateWithUnchangedLabel(t *testing.T) {
 	}
 
 	review := createAdmissionReviewWithOld(ns, oldNs, admissionv1.Update)
-	response, status := handler.mutate(context.Background(), review.Request, "test-cluster")
+	response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
 
 	if !response.Allowed {
 		t.Error("expected request to be allowed")

@@ -77,8 +77,12 @@ func (h *Handler) HandleMutate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use admission request UID as request ID for log correlation
+	requestID := string(admissionReview.Request.UID)
+	logger := h.logger.With(slog.String("request_id", requestID))
+
 	operation := string(admissionReview.Request.Operation)
-	response, status := h.mutate(r.Context(), admissionReview.Request, clusterName)
+	response, status := h.mutate(r.Context(), admissionReview.Request, clusterName, logger)
 	admissionReview.Response = response
 	admissionReview.Response.UID = admissionReview.Request.UID
 
@@ -97,14 +101,14 @@ func (h *Handler) HandleMutate(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(respBytes)
 }
 
-func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest, clusterName string) (*admissionv1.AdmissionResponse, string) {
+func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest, clusterName string, logger *slog.Logger) (*admissionv1.AdmissionResponse, string) {
 	if req.Kind.Kind != "Namespace" {
 		return &admissionv1.AdmissionResponse{Allowed: true}, metrics.StatusSkipped
 	}
 
 	var namespace corev1.Namespace
 	if err := json.Unmarshal(req.Object.Raw, &namespace); err != nil {
-		h.logger.Error("Failed to unmarshal namespace", slog.String("error", err.Error()))
+		logger.Error("Failed to unmarshal namespace", slog.String("error", err.Error()))
 		return &admissionv1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
@@ -116,7 +120,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 	// Get the project label from the new namespace
 	projectName, hasProjectLabel := namespace.Labels[projectLabel]
 	if !hasProjectLabel {
-		h.logger.Debug("Namespace has no project label, skipping",
+		logger.Debug("Namespace has no project label, skipping",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
 			slog.String("operation", string(req.Operation)),
@@ -137,7 +141,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 				// If project label hasn't changed and annotation exists, skip
 				if oldProjectName == projectName && currentAnnotation != "" {
-					h.logger.Debug("Project label unchanged and annotation exists, skipping",
+					logger.Debug("Project label unchanged and annotation exists, skipping",
 						slog.String("namespace", namespace.Name),
 						slog.String("cluster", clusterName),
 						slog.String("project", projectName),
@@ -150,7 +154,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 	clusterID, err := h.rancherClient.GetClusterID(ctx, clusterName)
 	if err != nil {
-		h.logger.Error("Failed to get cluster ID",
+		logger.Error("Failed to get cluster ID",
 			slog.String("cluster", clusterName),
 			slog.String("error", err.Error()),
 		)
@@ -163,7 +167,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 				},
 			}, metrics.StatusDenied
 		}
-		h.logger.Warn("Allowing namespace without project annotation (strict mode disabled)",
+		logger.Warn("Allowing namespace without project annotation (strict mode disabled)",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
 			slog.String("reason", "cluster_not_found"),
@@ -173,7 +177,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 	projectID, err := h.rancherClient.GetProjectID(ctx, clusterID, projectName)
 	if err != nil {
-		h.logger.Error("Failed to get project ID",
+		logger.Error("Failed to get project ID",
 			slog.String("project", projectName),
 			slog.String("cluster_id", clusterID),
 			slog.String("error", err.Error()),
@@ -187,7 +191,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 				},
 			}, metrics.StatusDenied
 		}
-		h.logger.Warn("Allowing namespace without project annotation (strict mode disabled)",
+		logger.Warn("Allowing namespace without project annotation (strict mode disabled)",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
 			slog.String("project", projectName),
@@ -200,7 +204,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 	// Check if annotation already has the correct value (avoid unnecessary patches)
 	if namespace.Annotations != nil && namespace.Annotations[projectAnnotation] == projectAnnotationValue {
-		h.logger.Debug("Annotation already has correct value, skipping",
+		logger.Debug("Annotation already has correct value, skipping",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
 			slog.String("annotation", projectAnnotationValue),
@@ -210,7 +214,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 	// Dry-run mode: log what would happen but don't apply the patch
 	if h.dryRun {
-		h.logger.Info("[DRY-RUN] Would add project annotation to namespace",
+		logger.Info("[DRY-RUN] Would add project annotation to namespace",
 			slog.String("namespace", namespace.Name),
 			slog.String("cluster", clusterName),
 			slog.String("cluster_id", clusterID),
@@ -248,7 +252,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 
 	patchBytes, err := json.Marshal(patch)
 	if err != nil {
-		h.logger.Error("Failed to marshal patch", slog.String("error", err.Error()))
+		logger.Error("Failed to marshal patch", slog.String("error", err.Error()))
 		return &admissionv1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
@@ -257,7 +261,7 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 		}, metrics.StatusError
 	}
 
-	h.logger.Info("Adding project annotation to namespace",
+	logger.Info("Adding project annotation to namespace",
 		slog.String("namespace", namespace.Name),
 		slog.String("cluster", clusterName),
 		slog.String("cluster_id", clusterID),
@@ -275,18 +279,10 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 	}, metrics.StatusMutated
 }
 
+// jsonPointerReplacer escapes strings for JSON Pointer (RFC 6901)
+// ~ becomes ~0, / becomes ~1 (order matters: ~ must be replaced first)
+var jsonPointerReplacer = strings.NewReplacer("~", "~0", "/", "~1")
+
 func escapeJSONPointer(s string) string {
-	// JSON Pointer escaping: ~ becomes ~0, / becomes ~1
-	result := ""
-	for _, c := range s {
-		switch c {
-		case '~':
-			result += "~0"
-		case '/':
-			result += "~1"
-		default:
-			result += string(c)
-		}
-	}
-	return result
+	return jsonPointerReplacer.Replace(s)
 }
