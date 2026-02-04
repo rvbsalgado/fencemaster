@@ -1,3 +1,20 @@
+## [1.0.0-rc.15](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.14...1.0.0-rc.15) (2026-02-04)
+
+### Bug Fixes
+
+* increase k8s client rate limits to prevent readiness probe timeouts ([a49fccd](https://github.com/rvbsalgado/fencemaster/commit/a49fccd9c99ae8f0956a0b2f928078c174eb8a79))
+
+### Documentation
+
+* enhance README with architecture, configuration, and usage details ([bc31dfe](https://github.com/rvbsalgado/fencemaster/commit/bc31dfebc8369d3e6e0c0e067348c623b59cf80a))
+* improve README ([7188e2b](https://github.com/rvbsalgado/fencemaster/commit/7188e2b6e3610c39d97651f2d58727ea84c9152a))
+* improve repository visibility and discoverability ([b3c1b63](https://github.com/rvbsalgado/fencemaster/commit/b3c1b634a69bd33b969b0414ce63eab96983d42f))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.11 [skip ci] ([3b15e76](https://github.com/rvbsalgado/fencemaster/commit/3b15e76195ed31765a060abb272ab78d845a7394))
+* **chart:** bump chart version to 0.1.12 [skip ci] ([a8b6005](https://github.com/rvbsalgado/fencemaster/commit/a8b60054023acf995731238e79e89a7140231a48))
+
 ## [1.0.0-rc.14](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.13...1.0.0-rc.14) (2026-02-04)
 
 ### Features
