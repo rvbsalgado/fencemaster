@@ -269,10 +269,161 @@ func (m *mockRancherClient) HealthCheck(ctx context.Context) error {
 // testHandlerConfig returns default config for tests
 func testHandlerConfig() HandlerConfig {
 	return HandlerConfig{
-		StrictMode:        false,
-		DryRun:            false,
-		ProjectLabel:      "project",
-		ProjectAnnotation: "field.cattle.io/projectId",
+		StrictMode:         false,
+		DryRun:             false,
+		ProjectLabel:       "project",
+		ProjectAnnotation:  "field.cattle.io/projectId",
+		ExcludedNamespaces: []string{},
+	}
+}
+
+func TestIsNamespaceExcluded(t *testing.T) {
+	tests := []struct {
+		name       string
+		exclusions []string
+		namespace  string
+		expected   bool
+	}{
+		{
+			name:       "exact match",
+			exclusions: []string{"kube-system", "default"},
+			namespace:  "kube-system",
+			expected:   true,
+		},
+		{
+			name:       "no match",
+			exclusions: []string{"kube-system", "default"},
+			namespace:  "my-app",
+			expected:   false,
+		},
+		{
+			name:       "prefix match",
+			exclusions: []string{"cattle-*"},
+			namespace:  "cattle-system",
+			expected:   true,
+		},
+		{
+			name:       "prefix match fleet",
+			exclusions: []string{"fleet-*"},
+			namespace:  "fleet-default",
+			expected:   true,
+		},
+		{
+			name:       "prefix no match",
+			exclusions: []string{"cattle-*"},
+			namespace:  "my-cattle-app",
+			expected:   false,
+		},
+		{
+			name:       "mixed exact and prefix",
+			exclusions: []string{"kube-system", "cattle-*", "default"},
+			namespace:  "cattle-fleet-system",
+			expected:   true,
+		},
+		{
+			name:       "empty exclusions",
+			exclusions: []string{},
+			namespace:  "kube-system",
+			expected:   false,
+		},
+		{
+			name:       "kube prefix",
+			exclusions: []string{"kube-*"},
+			namespace:  "kube-public",
+			expected:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			cfg := HandlerConfig{
+				ProjectLabel:       "project",
+				ProjectAnnotation:  "field.cattle.io/projectId",
+				ExcludedNamespaces: tt.exclusions,
+			}
+			handler := NewHandler(nil, logger, cfg)
+
+			result := handler.isNamespaceExcluded(tt.namespace)
+			if result != tt.expected {
+				t.Errorf("isNamespaceExcluded(%q) = %v, want %v", tt.namespace, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestMutate_ExcludedNamespace(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	mockClient := &mockRancherClient{
+		clusterID: "c-m-abc123",
+		projectID: "p-xyz789",
+	}
+
+	cfg := HandlerConfig{
+		StrictMode:         false,
+		DryRun:             false,
+		ProjectLabel:       "project",
+		ProjectAnnotation:  "field.cattle.io/projectId",
+		ExcludedNamespaces: []string{"kube-system", "cattle-*"},
+	}
+	handler := NewHandler(mockClient, logger, cfg)
+
+	tests := []struct {
+		name      string
+		namespace string
+		hasLabel  bool
+		expected  string
+	}{
+		{
+			name:      "excluded exact match",
+			namespace: "kube-system",
+			hasLabel:  true,
+			expected:  metrics.StatusSkipped,
+		},
+		{
+			name:      "excluded prefix match",
+			namespace: "cattle-fleet-system",
+			hasLabel:  true,
+			expected:  metrics.StatusSkipped,
+		},
+		{
+			name:      "not excluded with label",
+			namespace: "my-app",
+			hasLabel:  true,
+			expected:  metrics.StatusMutated,
+		},
+		{
+			name:      "not excluded without label",
+			namespace: "my-app",
+			hasLabel:  false,
+			expected:  metrics.StatusSkipped,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			labels := map[string]string{}
+			if tt.hasLabel {
+				labels["project"] = "platform"
+			}
+
+			ns := &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   tt.namespace,
+					Labels: labels,
+				},
+			}
+
+			review := createAdmissionReview(ns, admissionv1.Create)
+			response, status := handler.mutate(context.Background(), review.Request, "test-cluster", logger)
+
+			if !response.Allowed {
+				t.Error("expected request to be allowed")
+			}
+			if status != tt.expected {
+				t.Errorf("expected status '%s', got '%s'", tt.expected, status)
+			}
+		})
 	}
 }
 

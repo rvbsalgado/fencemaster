@@ -85,6 +85,15 @@ webhook:
   projectLabel: project
   # -- Annotation key to set on namespace for Rancher project assignment
   projectAnnotation: field.cattle.io/projectId
+  # -- Namespaces to exclude from mutation (supports * suffix for prefix matching)
+  # @default -- `["kube-system", "kube-public", "kube-node-lease", "default", "cattle-*", "fleet-*"]`
+  excludeNamespaces:
+    - kube-system
+    - kube-public
+    - kube-node-lease
+    - default
+    - cattle-*
+    - fleet-*
 
 metrics:
   # -- Port for Prometheus metrics endpoint

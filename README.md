@@ -55,6 +55,7 @@ annotations:
 - **Automatic project assignment** - Namespaces with `project` label get Rancher project annotation
 - **Multi-cluster support** - Single deployment serves all downstream clusters
 - **GitOps friendly** - Declarative namespace-to-project mapping
+- **Namespace exclusions** - Skip system namespaces (`kube-system`, `cattle-*`, etc.)
 - **Configurable** - Customize label and annotation names
 - **Caching** - In-memory cache for cluster/project lookups
 - **Prometheus metrics** - Monitor webhook performance and cache efficiency
@@ -123,6 +124,22 @@ See [charts/fencemaster](./charts/fencemaster) for full installation instruction
 | `--cache-ttl`          | `CACHE_TTL_MINUTES`  | 5                         | Cache entry TTL in minutes         |
 | `--project-label`      | `PROJECT_LABEL`      | project                   | Namespace label to read            |
 | `--project-annotation` | `PROJECT_ANNOTATION` | field.cattle.io/projectId | Annotation key to set              |
+| `--exclude-namespaces` | `EXCLUDE_NAMESPACES` | (see below)               | Namespaces to skip (comma-separated) |
+
+### Namespace Exclusions
+
+By default, the following namespaces are excluded from mutation:
+
+- `kube-system`, `kube-public`, `kube-node-lease`, `default`
+- `cattle-*` (all Rancher system namespaces)
+- `fleet-*` (all Fleet namespaces)
+
+You can customize this with the `--exclude-namespaces` flag or `EXCLUDE_NAMESPACES` environment variable. Patterns ending with `*` match prefixes:
+
+```bash
+# Custom exclusions
+--exclude-namespaces="kube-system,kube-public,my-system-*"
+```
 
 ## Operational Modes
 

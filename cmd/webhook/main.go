@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,16 +26,20 @@ var version = "dev"
 
 func main() {
 	var (
-		port              int
-		metricsPort       int
-		logLevel          string
-		logFormat         string
-		strictMode        bool
-		dryRun            bool
-		cacheTTLMins      int
-		projectLabel      string
-		projectAnnotation string
+		port               int
+		metricsPort        int
+		logLevel           string
+		logFormat          string
+		strictMode         bool
+		dryRun             bool
+		cacheTTLMins       int
+		projectLabel       string
+		projectAnnotation  string
+		excludeNamespaces  string
 	)
+
+	// Default excluded namespaces: system namespaces that should never be mutated
+	defaultExclusions := "kube-system,kube-public,kube-node-lease,default,cattle-*,fleet-*"
 
 	flag.IntVar(&port, "port", getEnvInt("PORT", 8080), "Webhook server port")
 	flag.IntVar(&metricsPort, "metrics-port", getEnvInt("METRICS_PORT", 9090), "Metrics server port")
@@ -45,7 +50,19 @@ func main() {
 	flag.IntVar(&cacheTTLMins, "cache-ttl", getEnvInt("CACHE_TTL_MINUTES", 5), "Cache TTL in minutes for cluster/project lookups")
 	flag.StringVar(&projectLabel, "project-label", getEnv("PROJECT_LABEL", "project"), "Namespace label to read project name from")
 	flag.StringVar(&projectAnnotation, "project-annotation", getEnv("PROJECT_ANNOTATION", "field.cattle.io/projectId"), "Annotation key to set on namespace")
+	flag.StringVar(&excludeNamespaces, "exclude-namespaces", getEnv("EXCLUDE_NAMESPACES", defaultExclusions), "Comma-separated list of namespaces to exclude (supports * suffix for prefix matching)")
 	flag.Parse()
+
+	// Parse excluded namespaces
+	var excludedNamespaces []string
+	if excludeNamespaces != "" {
+		for _, ns := range strings.Split(excludeNamespaces, ",") {
+			ns = strings.TrimSpace(ns)
+			if ns != "" {
+				excludedNamespaces = append(excludedNamespaces, ns)
+			}
+		}
+	}
 
 	cacheTTL := time.Duration(cacheTTLMins) * time.Minute
 	logger := logging.Setup(logLevel, logFormat)
@@ -60,6 +77,7 @@ func main() {
 		slog.Int("metrics_port", metricsPort),
 		slog.String("project_label", projectLabel),
 		slog.String("project_annotation", projectAnnotation),
+		slog.Any("excluded_namespaces", excludedNamespaces),
 	)
 
 	config, err := rest.InClusterConfig()
@@ -79,10 +97,11 @@ func main() {
 
 	rancherClient := rancher.NewClient(dynamicClient, logger, cacheTTL)
 	handler := webhook.NewHandler(rancherClient, logger, webhook.HandlerConfig{
-		StrictMode:        strictMode,
-		DryRun:            dryRun,
-		ProjectLabel:      projectLabel,
-		ProjectAnnotation: projectAnnotation,
+		StrictMode:         strictMode,
+		DryRun:             dryRun,
+		ProjectLabel:       projectLabel,
+		ProjectAnnotation:  projectAnnotation,
+		ExcludedNamespaces: excludedNamespaces,
 	})
 
 	// Main webhook server

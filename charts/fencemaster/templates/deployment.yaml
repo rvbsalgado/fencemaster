@@ -60,6 +60,8 @@ spec:
               value: {{ .Values.webhook.projectLabel | quote }}
             - name: PROJECT_ANNOTATION
               value: {{ .Values.webhook.projectAnnotation | quote }}
+            - name: EXCLUDE_NAMESPACES
+              value: {{ .Values.webhook.excludeNamespaces | join "," | quote }}
             - name: METRICS_PORT
               value: {{ .Values.metrics.port | quote }}
           readinessProbe:

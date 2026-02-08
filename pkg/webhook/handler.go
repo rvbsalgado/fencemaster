@@ -30,30 +30,66 @@ type RancherClient interface {
 
 // HandlerConfig contains configuration options for the webhook handler
 type HandlerConfig struct {
-	StrictMode        bool
-	DryRun            bool
-	ProjectLabel      string
-	ProjectAnnotation string
+	StrictMode         bool
+	DryRun             bool
+	ProjectLabel       string
+	ProjectAnnotation  string
+	ExcludedNamespaces []string
 }
 
 type Handler struct {
-	rancherClient     RancherClient
-	logger            *slog.Logger
-	strictMode        bool
-	dryRun            bool
-	projectLabel      string
-	projectAnnotation string
+	rancherClient      RancherClient
+	logger             *slog.Logger
+	strictMode         bool
+	dryRun             bool
+	projectLabel       string
+	projectAnnotation  string
+	excludedNamespaces map[string]struct{}
+	excludedPrefixes   []string
 }
 
 func NewHandler(rancherClient RancherClient, logger *slog.Logger, cfg HandlerConfig) *Handler {
-	return &Handler{
-		rancherClient:     rancherClient,
-		logger:            logger,
-		strictMode:        cfg.StrictMode,
-		dryRun:            cfg.DryRun,
-		projectLabel:      cfg.ProjectLabel,
-		projectAnnotation: cfg.ProjectAnnotation,
+	excluded := make(map[string]struct{})
+	var prefixes []string
+
+	for _, pattern := range cfg.ExcludedNamespaces {
+		if strings.HasSuffix(pattern, "*") {
+			// Prefix pattern: "kube-*" matches "kube-system", "kube-public", etc.
+			prefixes = append(prefixes, strings.TrimSuffix(pattern, "*"))
+		} else {
+			// Exact match
+			excluded[pattern] = struct{}{}
+		}
 	}
+
+	return &Handler{
+		rancherClient:      rancherClient,
+		logger:             logger,
+		strictMode:         cfg.StrictMode,
+		dryRun:             cfg.DryRun,
+		projectLabel:       cfg.ProjectLabel,
+		projectAnnotation:  cfg.ProjectAnnotation,
+		excludedNamespaces: excluded,
+		excludedPrefixes:   prefixes,
+	}
+}
+
+// isNamespaceExcluded checks if a namespace should be excluded from processing.
+// It supports exact matches and prefix matches (patterns ending with *)
+func (h *Handler) isNamespaceExcluded(name string) bool {
+	// Check exact match
+	if _, ok := h.excludedNamespaces[name]; ok {
+		return true
+	}
+
+	// Check prefix patterns
+	for _, prefix := range h.excludedPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // HandleMutate handles admission requests at /mutate/{cluster-name}
@@ -125,6 +161,15 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest,
 				Message: fmt.Sprintf("failed to unmarshal namespace: %v", err),
 			},
 		}, metrics.StatusError
+	}
+
+	// Check if namespace is excluded from processing
+	if h.isNamespaceExcluded(namespace.Name) {
+		logger.Debug("Namespace is excluded, skipping",
+			slog.String("namespace", namespace.Name),
+			slog.String("cluster", clusterName),
+		)
+		return &admissionv1.AdmissionResponse{Allowed: true}, metrics.StatusSkipped
 	}
 
 	// Get the project label from the new namespace
