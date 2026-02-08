@@ -1,3 +1,13 @@
+## [1.0.0-rc.17](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.16...1.0.0-rc.17) (2026-02-08)
+
+### Features
+
+* add namespace exclusion and fix CVE-2025-68121 ([a565fe9](https://github.com/rvbsalgado/fencemaster/commit/a565fe9c1c7570d38066d42e88849a4f8a8da15d))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.13 [skip ci] ([d3512e0](https://github.com/rvbsalgado/fencemaster/commit/d3512e0926bb8621147f8059af24767248a9adb6))
+
 ## [1.0.0-rc.16](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.15...1.0.0-rc.16) (2026-02-04)
 
 ### Features
