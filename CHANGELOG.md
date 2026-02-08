@@ -1,3 +1,9 @@
+## [1.0.0-rc.18](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.17...1.0.0-rc.18) (2026-02-08)
+
+### Bug Fixes
+
+* pin Go version to 1.25.7 in CI and bump appversion ([e6dc956](https://github.com/rvbsalgado/fencemaster/commit/e6dc956b96e9f44cf82bb2ee047df3f8fa6f67b9))
+
 ## [1.0.0-rc.17](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.16...1.0.0-rc.17) (2026-02-08)
 
 ### Features
