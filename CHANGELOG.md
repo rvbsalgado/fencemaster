@@ -1,3 +1,10 @@
+## [1.0.0-rc.19](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.18...1.0.0-rc.19) (2026-03-29)
+
+### Bug Fixes
+
+* add toolchain directive for gosec compatibility ([4551849](https://github.com/rvbsalgado/fencemaster/commit/45518492265538ad1437168fd3c25800fe9b5c2a))
+* bump Go version to 1.25.8 to address CVEs ([dcaaed5](https://github.com/rvbsalgado/fencemaster/commit/dcaaed5e97a767a440bb34d2dfe5da01b0d14e84))
+
 ## [1.0.0-rc.18](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.17...1.0.0-rc.18) (2026-02-08)
 
 ### Bug Fixes
