@@ -1,8 +1,6 @@
 module github.com/rvbsalgado/fencemaster
 
-go 1.25.7
-
-toolchain go1.25.7
+go 1.25.8
 
 require (
 	github.com/prometheus/client_golang v1.23.2
