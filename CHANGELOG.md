@@ -1,3 +1,9 @@
+## [1.0.0-rc.20](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.19...1.0.0-rc.20) (2026-03-29)
+
+### Bug Fixes
+
+* bump Go version to 1.25.8 to address CVEs ([3b7172f](https://github.com/rvbsalgado/fencemaster/commit/3b7172f8394ea830a0f35487bcda084e7058d48b))
+
 ## [1.0.0-rc.19](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.18...1.0.0-rc.19) (2026-03-29)
 
 ### Bug Fixes
