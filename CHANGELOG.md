@@ -1,3 +1,9 @@
+## [1.0.0-rc.21](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.20...1.0.0-rc.21) (2026-03-29)
+
+### Bug Fixes
+
+* Updated appVersion from 1.0.0-rc.18 to 1.0.0-rc.20 in  charts/fencemaster/Chart.yaml ([2108041](https://github.com/rvbsalgado/fencemaster/commit/21080410a08248b1e6457c5e9f2d2a9241cd1125))
+
 ## [1.0.0-rc.20](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.19...1.0.0-rc.20) (2026-03-29)
 
 ### Bug Fixes
