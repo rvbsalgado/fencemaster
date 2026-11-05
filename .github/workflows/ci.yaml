@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.8"
+          go-version: "1.26.10"
 
       - name: Download dependencies
         run: go mod download
@@ -43,7 +43,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.8"
+          go-version: "1.26.10"
 
       - name: Download dependencies
         run: go mod download
@@ -59,12 +59,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.8"
+          go-version: "1.26.10"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.8.0
+          # Must be built with Go >= go.mod's go directive (v2.8.0 was go1.25.5).
+          version: v2.15.0
 
   # helm:
   #   runs-on: ubuntu-latest
@@ -103,12 +104,18 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.8"
+          go-version: "1.26.10"
 
       - name: Run Gosec Security Scanner
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec ./...
+
+      # Fails on vulnerabilities reachable from our code (stdlib + modules).
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
 
   build-docker:
     runs-on: ubuntu-latest
