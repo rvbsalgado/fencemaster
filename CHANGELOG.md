@@ -1,3 +1,14 @@
+## [1.0.0-rc.22](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.21...1.0.0-rc.22) (2026-11-05)
+
+### Bug Fixes
+
+* bump Go and Kubernetes dependencies to resolve CVEs ([#1](https://github.com/rvbsalgado/fencemaster/issues/1)) ([b291194](https://github.com/rvbsalgado/fencemaster/commit/b2911944410e0801b7852b0c49a2f9838e3b8ec7))
+* trigger chart version bump on any charts/ chang ([c241c3c](https://github.com/rvbsalgado/fencemaster/commit/c241c3c7ac2d226fd5190c962c37de13e20672b9))
+
+### Maintenance
+
+* **chart:** bump chart version to 0.1.14 [skip ci] ([4075708](https://github.com/rvbsalgado/fencemaster/commit/40757083866f7f9bae69881762ca3934faec533c))
+
 ## [1.0.0-rc.21](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.20...1.0.0-rc.21) (2026-03-29)
 
 ### Bug Fixes
