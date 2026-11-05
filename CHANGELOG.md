@@ -1,3 +1,9 @@
+## [1.0.0-rc.24](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.23...1.0.0-rc.24) (2026-11-05)
+
+### Features
+
+* add hub sync to publish project IDs with Fleet ([#4](https://github.com/rvbsalgado/fencemaster/issues/4)) ([acabc91](https://github.com/rvbsalgado/fencemaster/commit/acabc91b579709179da6411da2e0ecfc72ff8bec))
+
 ## [1.0.0-rc.23](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.22...1.0.0-rc.23) (2026-11-05)
 
 ### Features
