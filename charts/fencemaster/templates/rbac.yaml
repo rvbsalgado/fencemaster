@@ -13,6 +13,54 @@ rules:
     resources: ["projects"]
     verbs: ["get", "list"]
 ---
+{{- else if eq .Values.installMode "controller" }}
+{{- $cm := splitList "/" .Values.controller.projectIdsConfigMap }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "fencemaster.fullname" . }}
+  labels:
+    {{- include "fencemaster.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "patch"]
+  # rancher-webhook only lets holders of this verb change the project annotation
+  - apiGroups: ["management.cattle.io"]
+    resources: ["projects"]
+    verbs: ["manage-namespaces"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "fencemaster.fullname" . }}
+  namespace: {{ first $cm }}
+  labels:
+    {{- include "fencemaster.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: [{{ last $cm | quote }}]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "fencemaster.fullname" . }}
+  namespace: {{ first $cm }}
+  labels:
+    {{- include "fencemaster.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "fencemaster.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "fencemaster.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+---
+{{- end }}
+{{- if has .Values.installMode (list "server" "all" "controller") }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

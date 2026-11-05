@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -14,10 +15,12 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rvbsalgado/fencemaster/pkg/controller"
 	"github.com/rvbsalgado/fencemaster/pkg/logging"
 	"github.com/rvbsalgado/fencemaster/pkg/rancher"
 	"github.com/rvbsalgado/fencemaster/pkg/webhook"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -36,6 +39,9 @@ func main() {
 		projectLabel       string
 		projectAnnotation  string
 		excludeNamespaces  string
+		mode               string
+		projectIDsCM       string
+		resyncMins         int
 	)
 
 	// Default excluded namespaces: system namespaces that should never be mutated
@@ -51,6 +57,9 @@ func main() {
 	flag.StringVar(&projectLabel, "project-label", getEnv("PROJECT_LABEL", "project"), "Namespace label to read project name from")
 	flag.StringVar(&projectAnnotation, "project-annotation", getEnv("PROJECT_ANNOTATION", "field.cattle.io/projectId"), "Annotation key to set on namespace")
 	flag.StringVar(&excludeNamespaces, "exclude-namespaces", getEnv("EXCLUDE_NAMESPACES", defaultExclusions), "Comma-separated list of namespaces to exclude (supports * suffix for prefix matching)")
+	flag.StringVar(&mode, "mode", getEnv("MODE", "server"), "server (admission webhook backed by Rancher lookups) or controller (watch namespaces in this cluster, project IDs from --project-ids-configmap)")
+	flag.StringVar(&projectIDsCM, "project-ids-configmap", getEnv("PROJECT_IDS_CONFIGMAP", "cattle-system/rancher-project-ids"), "controller mode: <namespace>/<name> of the ConfigMap mapping project name to \"<cluster-id>:<project-id>\"")
+	flag.IntVar(&resyncMins, "resync", getEnvInt("RESYNC_MINUTES", 10), "controller mode: full re-list interval in minutes (also retries failed patches)")
 	flag.Parse()
 
 	// Parse excluded namespaces
@@ -69,6 +78,7 @@ func main() {
 
 	logger.Info("Starting fencemaster",
 		slog.String("version", version),
+		slog.String("mode", mode),
 		slog.String("log_level", logLevel),
 		slog.String("log_format", logFormat),
 		slog.Bool("strict_mode", strictMode),
@@ -89,24 +99,64 @@ func main() {
 	config.QPS = 50
 	config.Burst = 100
 
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		logger.Error("Failed to create dynamic client", slog.String("error", err.Error()))
+	runCtx, stopRun := context.WithCancel(context.Background())
+	defer stopRun()
+
+	mux := http.NewServeMux()
+	var readyCheck func(ctx context.Context) error
+
+	switch mode {
+	case "server":
+		dynamicClient, err := dynamic.NewForConfig(config)
+		if err != nil {
+			logger.Error("Failed to create dynamic client", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+
+		rancherClient := rancher.NewClient(dynamicClient, logger, cacheTTL)
+		handler := webhook.NewHandler(rancherClient, logger, webhook.HandlerConfig{
+			StrictMode:         strictMode,
+			DryRun:             dryRun,
+			ProjectLabel:       projectLabel,
+			ProjectAnnotation:  projectAnnotation,
+			ExcludedNamespaces: excludedNamespaces,
+		})
+		mux.HandleFunc("/mutate/", handler.HandleMutate)
+		readyCheck = rancherClient.HealthCheck
+
+	case "controller":
+		cmNamespace, cmName, ok := strings.Cut(projectIDsCM, "/")
+		if !ok || cmNamespace == "" || cmName == "" {
+			logger.Error("--project-ids-configmap must be <namespace>/<name>", slog.String("value", projectIDsCM))
+			os.Exit(1)
+		}
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			logger.Error("Failed to create kubernetes client", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+
+		ctrl := controller.New(clientset, logger, controller.Config{
+			DryRun:              dryRun,
+			ProjectLabel:        projectLabel,
+			ProjectAnnotation:   projectAnnotation,
+			IsExcluded:          webhook.ExcludeMatcher(excludedNamespaces),
+			ProjectIDsNamespace: cmNamespace,
+			ProjectIDsName:      cmName,
+			Resync:              time.Duration(resyncMins) * time.Minute,
+		})
+		go ctrl.Run(runCtx)
+		readyCheck = func(context.Context) error {
+			if !ctrl.HasSynced() {
+				return errors.New("informer caches not synced")
+			}
+			return nil
+		}
+
+	default:
+		logger.Error("Unknown mode, expected server or controller", slog.String("mode", mode))
 		os.Exit(1)
 	}
-
-	rancherClient := rancher.NewClient(dynamicClient, logger, cacheTTL)
-	handler := webhook.NewHandler(rancherClient, logger, webhook.HandlerConfig{
-		StrictMode:         strictMode,
-		DryRun:             dryRun,
-		ProjectLabel:       projectLabel,
-		ProjectAnnotation:  projectAnnotation,
-		ExcludedNamespaces: excludedNamespaces,
-	})
-
-	// Main webhook server
-	mux := http.NewServeMux()
-	mux.HandleFunc("/mutate/", handler.HandleMutate)
 
 	// Liveness probe - basic server health
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +169,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
 
-		if err := rancherClient.HealthCheck(ctx); err != nil {
+		if err := readyCheck(ctx); err != nil {
 			logger.Error("Readiness check failed", slog.String("error", err.Error()))
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
@@ -172,6 +222,7 @@ func main() {
 	sig := <-sigCh
 
 	logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+	stopRun()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

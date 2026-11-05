@@ -45,6 +45,27 @@ helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
   --set downstreamWebhook.clusterName=my-cluster
 ```
 
+### Downstream Clusters (Controller, No Webhook)
+
+Use `installMode=controller` when the downstream API server can't reach the management
+cluster's webhook URL (e.g. EKS, whose control plane egress isn't from your NAT IPs).
+fencemaster then runs in the downstream cluster, watches namespaces, and sets the project
+annotation itself shortly after create/update. Project IDs come from a local ConfigMap
+mapping project name to `<cluster-id>:<project-id>`, so no Rancher access is needed:
+
+```bash
+kubectl -n cattle-system create configmap rancher-project-ids \
+  --from-literal=platform=c-abc12:p-xyz34
+
+helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n cattle-system \
+  --set installMode=controller \
+  --set controller.projectIdsConfigMap=cattle-system/rancher-project-ids
+```
+
+Namespaces that exist when it starts are also reconciled, and a project added to the
+ConfigMap later is applied to namespaces already carrying its label.
+
 ### Combined Installation (Management + Webhook)
 
 Install fencemaster in "all" mode to run both server and webhook in a single cluster:
@@ -130,6 +151,8 @@ kubectl logs -n fencemaster deployment/fencemaster -f
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity rules for pod scheduling |
 | commonLabels | object | `{}` | Common labels to apply to all resources |
+| controller.projectIdsConfigMap | string | `"cattle-system/rancher-project-ids"` | `<namespace>/<name>` of a ConfigMap mapping project name to its annotation value ("<cluster-id>:<project-id>") |
+| controller.resyncMinutes | int | `10` | Full re-list interval in minutes (also retries failed patches) |
 | downstreamWebhook.clusterName | string | `""` | Name of the downstream cluster (defaults to "local" when installMode=all) |
 | downstreamWebhook.excludeNamespaces | list | `["kube-system","kube-public","kube-node-lease"]` | Namespaces to exclude from mutation |
 | downstreamWebhook.externalUrl | string | `""` | External URL to reach the webhook from downstream clusters (e.g., https://fencemaster.example.com). When installMode=all and this is empty, uses internal service reference. |
@@ -143,7 +166,7 @@ kubectl logs -n fencemaster deployment/fencemaster -f
 | image.repository | string | `"ghcr.io/rvbsalgado/fencemaster"` | Container image repository |
 | image.tag | string | `""` | Image tag (defaults to chart appVersion) |
 | imagePullSecrets | list | `[]` | Image pull secrets for private registries |
-| installMode | string | `"server"` | Installation mode: "server" (management cluster), "webhook" (downstream cluster), or "all" (both) |
+| installMode | string | `"server"` | Installation mode: "server" (management cluster), "webhook" (downstream cluster), "all" (both), or "controller" (downstream cluster, watches namespaces locally - no webhook, works where the API server can't reach the management cluster, e.g. EKS) |
 | logging.format | string | `"json"` | Log format (json, text) |
 | logging.level | string | `"info"` | Log level (debug, info, warn, error) |
 | metrics.port | int | `9090` | Port for Prometheus metrics endpoint |
