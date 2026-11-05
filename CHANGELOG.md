@@ -1,3 +1,13 @@
+## [1.0.0-rc.23](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.22...1.0.0-rc.23) (2026-11-05)
+
+### Features
+
+* add controller mode for clusters without webhook access ([#3](https://github.com/rvbsalgado/fencemaster/issues/3)) ([838a74d](https://github.com/rvbsalgado/fencemaster/commit/838a74d7fedc487280d2c0a11fa2a84613f731dc))
+
+### CI/CD
+
+* remove redundant chart version bump workflow ([#2](https://github.com/rvbsalgado/fencemaster/issues/2)) ([ad187b2](https://github.com/rvbsalgado/fencemaster/commit/ad187b26a4acb8af727ce8be6ea5e5f98d9d9cc7))
+
 ## [1.0.0-rc.22](https://github.com/rvbsalgado/fencemaster/compare/1.0.0-rc.21...1.0.0-rc.22) (2026-11-05)
 
 ### Bug Fixes
