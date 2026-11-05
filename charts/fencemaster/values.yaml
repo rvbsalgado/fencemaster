@@ -1,4 +1,4 @@
-# -- Installation mode: "server" (management cluster), "webhook" (downstream cluster), or "all" (both)
+# -- Installation mode: "server" (management cluster), "webhook" (downstream cluster), "all" (both), or "controller" (downstream cluster, watches namespaces locally - no webhook, works where the API server can't reach the management cluster, e.g. EKS)
 installMode: server
 
 # -- Number of replicas for high availability
@@ -148,6 +148,14 @@ tolerations: []
 
 # -- Affinity rules for pod scheduling
 affinity: {}
+
+# Controller mode (installMode=controller). Reuses webhook.projectLabel,
+# webhook.projectAnnotation, webhook.excludeNamespaces and webhook.dryRun.
+controller:
+  # -- `<namespace>/<name>` of a ConfigMap mapping project name to its annotation value ("<cluster-id>:<project-id>")
+  projectIdsConfigMap: cattle-system/rancher-project-ids
+  # -- Full re-list interval in minutes (also retries failed patches)
+  resyncMinutes: 10
 
 # Downstream cluster webhook configuration
 # Deploy separately on each downstream cluster

@@ -38,58 +38,57 @@ type HandlerConfig struct {
 }
 
 type Handler struct {
-	rancherClient      RancherClient
-	logger             *slog.Logger
-	strictMode         bool
-	dryRun             bool
-	projectLabel       string
-	projectAnnotation  string
-	excludedNamespaces map[string]struct{}
-	excludedPrefixes   []string
+	rancherClient     RancherClient
+	logger            *slog.Logger
+	strictMode        bool
+	dryRun            bool
+	projectLabel      string
+	projectAnnotation string
+	isExcluded        func(string) bool
 }
 
 func NewHandler(rancherClient RancherClient, logger *slog.Logger, cfg HandlerConfig) *Handler {
+	return &Handler{
+		rancherClient:     rancherClient,
+		logger:            logger,
+		strictMode:        cfg.StrictMode,
+		dryRun:            cfg.DryRun,
+		projectLabel:      cfg.ProjectLabel,
+		projectAnnotation: cfg.ProjectAnnotation,
+		isExcluded:        ExcludeMatcher(cfg.ExcludedNamespaces),
+	}
+}
+
+// ExcludeMatcher returns a func reporting whether a namespace matches any of
+// the patterns: exact name, or prefix when the pattern ends with * ("kube-*").
+func ExcludeMatcher(patterns []string) func(string) bool {
 	excluded := make(map[string]struct{})
 	var prefixes []string
 
-	for _, pattern := range cfg.ExcludedNamespaces {
+	for _, pattern := range patterns {
 		if strings.HasSuffix(pattern, "*") {
-			// Prefix pattern: "kube-*" matches "kube-system", "kube-public", etc.
 			prefixes = append(prefixes, strings.TrimSuffix(pattern, "*"))
 		} else {
-			// Exact match
 			excluded[pattern] = struct{}{}
 		}
 	}
 
-	return &Handler{
-		rancherClient:      rancherClient,
-		logger:             logger,
-		strictMode:         cfg.StrictMode,
-		dryRun:             cfg.DryRun,
-		projectLabel:       cfg.ProjectLabel,
-		projectAnnotation:  cfg.ProjectAnnotation,
-		excludedNamespaces: excluded,
-		excludedPrefixes:   prefixes,
+	return func(name string) bool {
+		if _, ok := excluded[name]; ok {
+			return true
+		}
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(name, prefix) {
+				return true
+			}
+		}
+		return false
 	}
 }
 
 // isNamespaceExcluded checks if a namespace should be excluded from processing.
-// It supports exact matches and prefix matches (patterns ending with *)
 func (h *Handler) isNamespaceExcluded(name string) bool {
-	// Check exact match
-	if _, ok := h.excludedNamespaces[name]; ok {
-		return true
-	}
-
-	// Check prefix patterns
-	for _, prefix := range h.excludedPrefixes {
-		if strings.HasPrefix(name, prefix) {
-			return true
-		}
-	}
-
-	return false
+	return h.isExcluded(name)
 }
 
 // HandleMutate handles admission requests at /mutate/{cluster-name}

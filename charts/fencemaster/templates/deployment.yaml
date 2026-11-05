@@ -1,4 +1,4 @@
-{{- if or (eq .Values.installMode "server") (eq .Values.installMode "all") }}
+{{- if has .Values.installMode (list "server" "all" "controller") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +6,8 @@ metadata:
   labels:
     {{- include "fencemaster.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  {{- /* ponytail: no leader election, so one controller replica (patches are idempotent, a second would only duplicate work) */}}
+  replicas: {{ eq .Values.installMode "controller" | ternary 1 .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "fencemaster.selectorLabels" . | nindent 6 }}
@@ -46,6 +47,14 @@ spec:
               containerPort: {{ .Values.metrics.port }}
               protocol: TCP
           env:
+            - name: MODE
+              value: {{ eq .Values.installMode "controller" | ternary "controller" "server" | quote }}
+            {{- if eq .Values.installMode "controller" }}
+            - name: PROJECT_IDS_CONFIGMAP
+              value: {{ .Values.controller.projectIdsConfigMap | quote }}
+            - name: RESYNC_MINUTES
+              value: {{ .Values.controller.resyncMinutes | quote }}
+            {{- end }}
             - name: LOG_LEVEL
               value: {{ .Values.logging.level | quote }}
             - name: LOG_FORMAT
