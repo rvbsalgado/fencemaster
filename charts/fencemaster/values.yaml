@@ -157,6 +157,24 @@ controller:
   # -- Full re-list interval in minutes (also retries failed patches)
   resyncMinutes: 10
 
+# Hub sync. Runs next to the server in the management cluster and keeps the
+# controller's ConfigMap up to date on downstream clusters, using Fleet.
+sync:
+  # -- Deploy the hub sync (only with installMode "server" or "all")
+  enabled: false
+  # -- Log what would be published without writing Fleet Bundles
+  dryRun: false
+  # -- Only publish to clusters labelled `fencemaster/project-sync=true`. By default all clusters are included, except those labelled `fencemaster/project-sync=false`
+  optIn: false
+  # -- Custom label selector for the provisioning clusters to publish to, used instead of `optIn` when set
+  clusterSelector: ""
+  # -- `<namespace>/<name>` of the ConfigMap to create on downstream clusters. Must match `controller.projectIdsConfigMap` there
+  projectIdsConfigMap: cattle-system/rancher-project-ids
+  # -- Namespace of the provisioning clusters and their Fleet Bundles
+  fleetNamespace: fleet-default
+  # -- Full re-list interval in minutes
+  resyncMinutes: 10
+
 # Downstream cluster webhook configuration
 # Deploy separately on each downstream cluster
 downstreamWebhook:

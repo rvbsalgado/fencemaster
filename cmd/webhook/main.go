@@ -16,9 +16,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rvbsalgado/fencemaster/pkg/controller"
+	"github.com/rvbsalgado/fencemaster/pkg/hubsync"
 	"github.com/rvbsalgado/fencemaster/pkg/logging"
 	"github.com/rvbsalgado/fencemaster/pkg/rancher"
 	"github.com/rvbsalgado/fencemaster/pkg/webhook"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,6 +44,8 @@ func main() {
 		mode               string
 		projectIDsCM       string
 		resyncMins         int
+		syncSelector       string
+		fleetNamespace     string
 	)
 
 	// Default excluded namespaces: system namespaces that should never be mutated
@@ -57,9 +61,11 @@ func main() {
 	flag.StringVar(&projectLabel, "project-label", getEnv("PROJECT_LABEL", "project"), "Namespace label to read project name from")
 	flag.StringVar(&projectAnnotation, "project-annotation", getEnv("PROJECT_ANNOTATION", "field.cattle.io/projectId"), "Annotation key to set on namespace")
 	flag.StringVar(&excludeNamespaces, "exclude-namespaces", getEnv("EXCLUDE_NAMESPACES", defaultExclusions), "Comma-separated list of namespaces to exclude (supports * suffix for prefix matching)")
-	flag.StringVar(&mode, "mode", getEnv("MODE", "server"), "server (admission webhook backed by Rancher lookups) or controller (watch namespaces in this cluster, project IDs from --project-ids-configmap)")
-	flag.StringVar(&projectIDsCM, "project-ids-configmap", getEnv("PROJECT_IDS_CONFIGMAP", "cattle-system/rancher-project-ids"), "controller mode: <namespace>/<name> of the ConfigMap mapping project name to \"<cluster-id>:<project-id>\"")
-	flag.IntVar(&resyncMins, "resync", getEnvInt("RESYNC_MINUTES", 10), "controller mode: full re-list interval in minutes (also retries failed patches)")
+	flag.StringVar(&mode, "mode", getEnv("MODE", "server"), "server (admission webhook backed by Rancher lookups), controller (watch namespaces in this cluster, project IDs from --project-ids-configmap) or sync (on the hub, publish that ConfigMap to downstream clusters with Fleet)")
+	flag.StringVar(&projectIDsCM, "project-ids-configmap", getEnv("PROJECT_IDS_CONFIGMAP", "cattle-system/rancher-project-ids"), "controller and sync modes: <namespace>/<name> of the ConfigMap mapping project name to \"<cluster-id>:<project-id>\"")
+	flag.IntVar(&resyncMins, "resync", getEnvInt("RESYNC_MINUTES", 10), "controller and sync modes: full re-list interval in minutes (also retries failed patches)")
+	flag.StringVar(&syncSelector, "sync-cluster-selector", getEnv("SYNC_CLUSTER_SELECTOR", hubsync.DefaultClusterSelector), "sync mode: label selector for the provisioning clusters to publish project IDs to")
+	flag.StringVar(&fleetNamespace, "fleet-namespace", getEnv("FLEET_NAMESPACE", "fleet-default"), "sync mode: namespace of the provisioning clusters and their Fleet Bundles")
 	flag.Parse()
 
 	// Parse excluded namespaces
@@ -105,6 +111,12 @@ func main() {
 	mux := http.NewServeMux()
 	var readyCheck func(ctx context.Context) error
 
+	cmNamespace, cmName, ok := strings.Cut(projectIDsCM, "/")
+	if mode != "server" && (!ok || cmNamespace == "" || cmName == "") {
+		logger.Error("--project-ids-configmap must be <namespace>/<name>", slog.String("value", projectIDsCM))
+		os.Exit(1)
+	}
+
 	switch mode {
 	case "server":
 		dynamicClient, err := dynamic.NewForConfig(config)
@@ -125,11 +137,6 @@ func main() {
 		readyCheck = rancherClient.HealthCheck
 
 	case "controller":
-		cmNamespace, cmName, ok := strings.Cut(projectIDsCM, "/")
-		if !ok || cmNamespace == "" || cmName == "" {
-			logger.Error("--project-ids-configmap must be <namespace>/<name>", slog.String("value", projectIDsCM))
-			os.Exit(1)
-		}
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			logger.Error("Failed to create kubernetes client", slog.String("error", err.Error()))
@@ -153,8 +160,35 @@ func main() {
 			return nil
 		}
 
+	case "sync":
+		if _, err := labels.Parse(syncSelector); err != nil {
+			logger.Error("Invalid --sync-cluster-selector", slog.String("value", syncSelector), slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		dynamicClient, err := dynamic.NewForConfig(config)
+		if err != nil {
+			logger.Error("Failed to create dynamic client", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+
+		syncer := hubsync.New(dynamicClient, logger, hubsync.Config{
+			DryRun:              dryRun,
+			ClusterSelector:     syncSelector,
+			FleetNamespace:      fleetNamespace,
+			ProjectIDsNamespace: cmNamespace,
+			ProjectIDsName:      cmName,
+			Resync:              time.Duration(resyncMins) * time.Minute,
+		})
+		go syncer.Run(runCtx)
+		readyCheck = func(context.Context) error {
+			if !syncer.HasSynced() {
+				return errors.New("informer caches not synced")
+			}
+			return nil
+		}
+
 	default:
-		logger.Error("Unknown mode, expected server or controller", slog.String("mode", mode))
+		logger.Error("Unknown mode, expected server, controller or sync", slog.String("mode", mode))
 		os.Exit(1)
 	}
 

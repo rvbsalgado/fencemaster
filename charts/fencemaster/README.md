@@ -66,6 +66,41 @@ helm install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
 Namespaces that exist when it starts are also reconciled, and a project added to the
 ConfigMap later is applied to namespaces already carrying its label.
 
+### Keeping Project IDs Up to Date (Hub Sync)
+
+Instead of managing the ConfigMap yourself, enable the hub sync on your management
+cluster install. It watches Rancher projects and writes one Fleet Bundle per cluster, and
+`fleet-agent` applies the ConfigMap downstream, so downstream clusters need no Rancher
+credentials:
+
+```bash
+helm upgrade --install fencemaster oci://ghcr.io/rvbsalgado/charts/fencemaster \
+  -n cattle-system \
+  --reuse-values \
+  --set sync.enabled=true
+```
+
+All provisioning clusters are included by default. To skip one, label it:
+
+```bash
+kubectl -n fleet-default label clusters.provisioning.cattle.io my-cluster \
+  fencemaster/project-sync=false
+```
+
+To include only the clusters you choose, set `sync.optIn=true` and label those clusters
+`fencemaster/project-sync=true`. For anything else, set `sync.clusterSelector`.
+
+Use `sync.dryRun=true` first to log what would be published. It runs as a separate
+Deployment, so a problem with it can't affect the webhook, and it has its own
+ServiceAccount, so webhook pods can't write Bundles.
+
+ConfigMap keys are project display names with characters other than letters, digits, `-`,
+`_` and `.` replaced by `-`, so `Team A` needs the namespace label `project: Team-A`.
+Projects that end up with the same key are skipped and logged as errors.
+
+A cluster that stops matching keeps its Bundle and ConfigMap, but they stop updating. Deleting
+the Bundle deletes the ConfigMap, after which new namespaces stay unassigned.
+
 ### Combined Installation (Management + Webhook)
 
 Install fencemaster in "all" mode to run both server and webhook in a single cluster:
@@ -191,6 +226,13 @@ kubectl logs -n fencemaster deployment/fencemaster -f
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.create | bool | `true` | Create a service account |
 | serviceAccount.name | string | `""` | Name of the service account (auto-generated if empty) |
+| sync.clusterSelector | string | `""` | Custom label selector for the provisioning clusters to publish to, used instead of `optIn` when set |
+| sync.dryRun | bool | `false` | Log what would be published without writing Fleet Bundles |
+| sync.enabled | bool | `false` | Deploy the hub sync (only with installMode "server" or "all") |
+| sync.fleetNamespace | string | `"fleet-default"` | Namespace of the provisioning clusters and their Fleet Bundles |
+| sync.optIn | bool | `false` | Only publish to clusters labelled `fencemaster/project-sync=true`. By default all clusters are included, except those labelled `fencemaster/project-sync=false` |
+| sync.projectIdsConfigMap | string | `"cattle-system/rancher-project-ids"` | `<namespace>/<name>` of the ConfigMap to create on downstream clusters. Must match `controller.projectIdsConfigMap` there |
+| sync.resyncMinutes | int | `10` | Full re-list interval in minutes |
 | tolerations | list | `[]` | Tolerations for pod scheduling |
 | topologySpreadConstraints.enabled | bool | `true` | Enable topology spread constraints for HA |
 | topologySpreadConstraints.maxSkew | int | `1` | Maximum allowed skew between zones/nodes |
